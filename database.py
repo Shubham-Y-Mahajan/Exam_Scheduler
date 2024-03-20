@@ -26,8 +26,9 @@ def csv_to_db(csv_filepath,db_filepath):
 
     connection.commit()
     connection.close()
+    return 1
 
-def clear_course_slot_db(db_filepath):
+def clear_course_slot_db(db_filepath): #todo check in on this
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
 
@@ -38,7 +39,7 @@ def clear_course_slot_db(db_filepath):
 
     connection.commit()
     connection.close()
-
+    return 1
 def populate_course_table(db_filepath):
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
@@ -77,7 +78,7 @@ def populate_course_table(db_filepath):
 
     connection.commit()
     connection.close()
-
+    return 1
 def populate_slot_table(slot_codes,course,connection):
     cursor=connection.cursor()
     for slot in slot_codes:
@@ -87,7 +88,7 @@ def populate_slot_table(slot_codes,course,connection):
         if row:
             course_list=json.loads(row[0])
         else:
-            course_list=[]
+            return -3 # slot dne in Time Table
 
         course_list.append(course)
         serialized_list = json.dumps(course_list)
@@ -97,13 +98,44 @@ def populate_slot_table(slot_codes,course,connection):
 
     connection.commit()
 
+    return 1
+
+def clear_exam_schedule_table(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+
+    cursor.execute("DELETE FROM exam_schedule")
+
+    connection.commit()
+    connection.close()
+    return 1
+
+def populate_exam_schedule_table(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM constraints")
+    row=cursor.fetchall()
+    print (row)
+
+    days=row[0][0]
+    slots=row[0][1]
+
+    new_rows=[]
+    for i in range(days):
+        for j in range(slots):
+            new_rows.append((f"{i+1}{j+1}","[]","[]",0))
 
 
 
-
+    cursor.executemany("INSERT INTO exam_schedule VALUES(?,?,?,?)", new_rows)
+    connection.commit()
+    connection.close()
 
 if __name__ == "__main__":
     # csv_to_db(csv_filepath,db_filepath)
-    clear_course_slot_db(db_filepath)
+    #clear_course_slot_db(db_filepath)
 
-    populate_course_table(db_filepath)
+    #populate_course_table(db_filepath)
+    #populate_exam_schedule_table(db_filepath=db_filepath)
+    clear_exam_schedule_table(db_filepath=db_filepath)
+    populate_exam_schedule_table(db_filepath=db_filepath)

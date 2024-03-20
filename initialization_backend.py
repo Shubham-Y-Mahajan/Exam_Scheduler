@@ -102,7 +102,8 @@ def initialize_scheduling(db_filepath):
     connection.close()
     return ([courses,exam_slots,course_slots])
 
-def schedule_exam(db_filepath,content):
+def first_draft(db_filepath,content): # for first draft of the exams
+    """ return types :  -1 = course not in table , -2= exam slot dne , -3 Slot dne in Time Table"""
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
 
@@ -119,7 +120,7 @@ def schedule_exam(db_filepath,content):
             if row:
                 courses = json.loads(row[0])
             else:
-                courses=[]
+                return -3 # slot dne in Time Table
             # jo bhi slot_data table me courses hai vahi schedule honge
             # note that not_scheduled[] has been fetched from table 'course_data' which has all the courses
             for course in courses:
@@ -130,7 +131,7 @@ def schedule_exam(db_filepath,content):
                     if row:
                         exam_students = json.loads(row[0])
                     else:
-                        exam_students = []
+                        return -2
 
                     capacity_filled = len(exam_students)
 
@@ -139,7 +140,7 @@ def schedule_exam(db_filepath,content):
                     if row:
                         course_students = json.loads(row[0])
                     else:
-                        course_students = []
+                        return -1 # course dne in table
 
                     number_of_students=len(course_students)
 
@@ -157,7 +158,7 @@ def schedule_exam(db_filepath,content):
                         if row:
                             exam_courses = json.loads(row[0])
                         else:
-                            exam_courses= []
+                            return -2 # exam slot dne
 
                         exam_courses.append(course)
                         scheduled.append(course)
@@ -185,7 +186,7 @@ def schedule_exam(db_filepath,content):
         if row:
             students = json.loads(row[0])
         else:
-            students = []
+            return -1 # course dne in table
         serialized_students = json.dumps(students)
 
         new_row=[(course,serialized_students)]
@@ -193,7 +194,7 @@ def schedule_exam(db_filepath,content):
 
     connection.commit()
     connection.close()
-
+    return 1
 def clear_exam_scheduling_data(db_filepath):
     #clears both exam_schedule table and not_scheduled table
     connection = sqlite3.connect(db_filepath)
@@ -204,9 +205,9 @@ def clear_exam_scheduling_data(db_filepath):
     connection.commit()
     connection.close()
 
-
+    return 1
 
 if __name__ == "__main__":
     clear_exam_scheduling_data(db_filepath)
     content=initialize_scheduling(db_filepath=db_filepath)
-    schedule_exam(db_filepath=db_filepath,content=content)
+    first_draft(db_filepath=db_filepath,content=content)
