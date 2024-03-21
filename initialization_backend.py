@@ -208,6 +208,6 @@ def clear_exam_scheduling_data(db_filepath):
     return 1
 
 if __name__ == "__main__":
-    clear_exam_scheduling_data(db_filepath)
+    clear_exam_scheduling_data(db_filepath) # exam _schedule table empty but initialized ( [], [])
     content=initialize_scheduling(db_filepath=db_filepath)
-    first_draft(db_filepath=db_filepath,content=content)
+    first_draft(db_filepath=db_filepath,content=content) # first draft filled in exam_schedule table (used along with initialize scheduling)

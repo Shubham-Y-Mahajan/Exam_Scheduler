@@ -8,7 +8,13 @@ from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdi
 import sys
 from backend import schedule_course,deschedule_course
 
+from database import clear_exam_schedule_table,clear_course_slot_db,initialize_exam_schedule_table\
+    ,populate_course_table,csv_to_db ,clear_student_enrollment_data
+from initialization_backend import clear_exam_scheduling_data,first_draft,initialize_scheduling
+
+
 db_filepath="Data.db"
+csv_filepath="acad_office_data.csv" # ye spreadsheet se qutomatically create karne ka try karo
 class DatabaseConnection():
     def __init__(self, database=db_filepath):
         self.db = database
@@ -23,28 +29,40 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Exam Management System")
-        self.setMinimumSize(1000, 800)  # min window size
+        self.setMinimumSize(1100, 900)  # min window size
+        self.showMaximized()
 
-        file_menu_item = self.menuBar().addMenu("&File")
+        settings_menu_item = self.menuBar().addMenu("&Settings")
+        database_menu_item = self.menuBar().addMenu("&Database")
+        about_menu_item = self.menuBar().addMenu("&About")
         help_menu_item = self.menuBar().addMenu("&Help")
-        edit_menu_item = self.menuBar().addMenu("&Edit")
 
 
-        schedule_action = QAction(QIcon("icons/add.png"), "[Schedule]", self)
-        schedule_action.triggered.connect(self.insert)
-        file_menu_item.addAction(schedule_action)
+        control_database_action = QAction( "[Control]", self)
+        control_database_action.triggered.connect(self.database)
+        database_menu_item.addAction(control_database_action)
 
-        deschedule_action = QAction(QIcon("icons/search.png"), "[De-schedule]", self)
-        deschedule_action.triggered.connect(self.deschedule)
-        edit_menu_item.addAction(deschedule_action)
+        constraints_change_action = QAction( "[Change Constraints]", self)
+        constraints_change_action.triggered.connect(self.constraints)
+        settings_menu_item.addAction(constraints_change_action)
 
         about_action = QAction("About", self)
+        about_menu_item.addAction(about_action)
+        about_action.triggered.connect(self.about)
 
-        help_menu_item.addAction(about_action)
+        setup_action = QAction("Setup", self)
+        help_menu_item.addAction(setup_action)
+        setup_action.triggered.connect(self.about)
+
+        functionality_action = QAction("Functionality", self)
+        help_menu_item.addAction(functionality_action)
+        functionality_action.triggered.connect(self.about)
+
+
         """IF THE HELP ITEM DIDNT SHOW 
         about_action.setMenuRole(QAction.MenuRole.NoRole)
         """
-        about_action.triggered.connect(self.about)
+
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -52,6 +70,9 @@ class MainWindow(QMainWindow):
         self.table1 = QTableWidget()
         self.table1.setColumnCount(3)
         self.table1.setHorizontalHeaderLabels(("slot", "courses","Total Students"))
+        # Set width for a particular column
+        self.table1.setColumnWidth(1, 1400)  # Set the width of the second column
+
         self.table1.verticalHeader().setVisible(False)
         # this disables the by default index column that appears in the table
         #self.setCentralWidget(self.table1)  # special for Q main window
@@ -73,8 +94,8 @@ class MainWindow(QMainWindow):
         toolbar.setMovable(True)
         self.addToolBar(toolbar)
 
-        """toolbar.addAction(schedule_action)
-        toolbar.addAction(deschedule_action)"""
+        """toolbar.addAction(control_database_action)
+        toolbar.addAction(constraints_change_action)"""
 
         # Create stautus bar
 
@@ -136,8 +157,6 @@ class MainWindow(QMainWindow):
                 # setItem is used to populate the empty row with data
         connection.close()
 
-
-
     def cell_clicked_table1(self):
         Deschedule_button = QPushButton("Deschedule Course")
         Deschedule_button.clicked.connect(self.deschedule)
@@ -151,8 +170,6 @@ class MainWindow(QMainWindow):
                 self.statusbar.removeWidget(child)
 
         self.statusbar.addWidget(Deschedule_button)
-
-
 
     def cell_clicked_table2(self):
         Schedule_button = QPushButton("Schedule Course")
@@ -177,6 +194,14 @@ class MainWindow(QMainWindow):
         deschedule_dialog = DescheduleDialog()
         deschedule_dialog.exec()
 
+    def database(self):
+        database_dialog = DatabaseDialog()
+        database_dialog.exec()
+
+    def constraints(self):
+        constraints_dialog = DatabaseDialog()
+        constraints_dialog.exec()
+
     def insert(self):
         dialog_insert = InsertDialog()
         dialog_insert.exec()  # opens new window
@@ -199,7 +224,67 @@ class MainWindow(QMainWindow):
 
 
 
+class DatabaseDialog(QDialog):
+    def __init__(self):
+        super().__init__()
 
+        self.setWindowTitle("Database Controls")
+        self.setFixedWidth(500)
+        self.setFixedHeight(500)
+
+        layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
+
+
+        # update button
+        button1 = QPushButton("Restore First Draft")
+        button2 = QPushButton("Constraints Changed")
+        button3 = QPushButton("Input Changed")
+        button1.clicked.connect(self.restore)
+        button2.clicked.connect(self.constraints_changed)
+        button3.clicked.connect(self.input_changed)
+        layout.addWidget(button1)
+        layout.addWidget(button2)
+        layout.addWidget(button3)
+
+        self.setLayout(layout)
+    def message_box(self):
+        self.close()  # the dialog box closes
+
+        # Creating confirmation message box
+        # the purpose of a Q meesage box is to show prompts and messages
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The action was executed successfully")
+        confirmation_widget.exec()
+    def restore(self):
+        # below to be used to just restore to the first draft ( reset )
+        clear_exam_scheduling_data(db_filepath)  # exam _schedule table empty but initialized ( [], [])
+        content = initialize_scheduling(db_filepath=db_filepath)
+        first_draft(db_filepath=db_filepath,content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
+        window.load_not_scheduled()
+        window.load_exam_schedule()
+        self.message_box()
+    def constraints_changed(self):
+        # below vale used when constraints changed
+        clear_exam_schedule_table(db_filepath=db_filepath)  # clean wipe
+        initialize_exam_schedule_table(db_filepath=db_filepath)  # initialization ( [] , [] )
+        content = initialize_scheduling(db_filepath=db_filepath)
+        first_draft(db_filepath=db_filepath,content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
+        window.load_not_scheduled()
+        window.load_exam_schedule()
+        self.message_box()
+    def input_changed(self):
+        # below vale used when spreadsheet ( input ) changed
+        clear_exam_scheduling_data(db_filepath)
+        clear_student_enrollment_data(db_filepath)
+        clear_course_slot_db(db_filepath)  # course_data and slot_data table emptied
+        csv_to_db(csv_filepath, db_filepath)  # for spreadsheet csv to student enrollment table fill
+        populate_course_table(db_filepath)  # student enrollment data se course_data table fill hoga then usse slot data filled
+        content = initialize_scheduling(db_filepath=db_filepath)
+        first_draft(db_filepath=db_filepath,content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
+        window.load_not_scheduled()
+        window.load_exam_schedule()
+        self.message_box()
 class ScheduleDialog(QDialog):
     def __init__(self):
         super().__init__()

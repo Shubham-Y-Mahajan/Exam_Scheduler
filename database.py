@@ -28,7 +28,7 @@ def csv_to_db(csv_filepath,db_filepath):
     connection.close()
     return 1
 
-def clear_course_slot_db(db_filepath): #todo check in on this
+def clear_course_slot_db(db_filepath):
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
 
@@ -105,17 +105,27 @@ def clear_exam_schedule_table(db_filepath):
     cursor = connection.cursor()
 
     cursor.execute("DELETE FROM exam_schedule")
+    cursor.execute("DELETE FROM not_scheduled")
 
     connection.commit()
     connection.close()
     return 1
 
-def populate_exam_schedule_table(db_filepath):
+def clear_student_enrollment_data(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+
+    cursor.execute("DELETE FROM student_enrollment_data")
+
+
+    connection.commit()
+    connection.close()
+    return 1
+def initialize_exam_schedule_table(db_filepath):
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
     cursor.execute("SELECT * FROM constraints")
     row=cursor.fetchall()
-    print (row)
 
     days=row[0][0]
     slots=row[0][1]
@@ -132,10 +142,11 @@ def populate_exam_schedule_table(db_filepath):
     connection.close()
 
 if __name__ == "__main__":
-    # csv_to_db(csv_filepath,db_filepath)
-    #clear_course_slot_db(db_filepath)
+    # csv_to_db(csv_filepath,db_filepath) # for spreadsheet csv to student enrollment table fill
 
-    #populate_course_table(db_filepath)
-    #populate_exam_schedule_table(db_filepath=db_filepath)
-    clear_exam_schedule_table(db_filepath=db_filepath)
-    populate_exam_schedule_table(db_filepath=db_filepath)
+    #clear_course_slot_db(db_filepath) # course_data and slot_data table emptied
+
+    #populate_course_table(db_filepath) # student enrollment data se course_data table fill hoga then usse slot data filled
+
+    clear_exam_schedule_table(db_filepath=db_filepath) # clean wipe
+    initialize_exam_schedule_table(db_filepath=db_filepath) # initialization ( [] , [] )
