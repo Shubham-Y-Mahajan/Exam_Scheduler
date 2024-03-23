@@ -157,12 +157,54 @@ def schedule_course(db_filepath,exam_slot,course):
     return 1 # success
 
 
+def analysis(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+    cursor.execute("SELECT days FROM constraints")
+    row = cursor.fetchone()
+
+    days=row[0]
+
+    for i in range(1,days+1,1):
+        cursor.execute(f"SELECT students FROM exam_schedule WHERE slot = '{i}1'")
+        row1 = cursor.fetchone()
+        cursor.execute(f"SELECT students FROM exam_schedule WHERE slot = '{i}2'")
+        row2 = cursor.fetchone()
+        cursor.execute(f"SELECT students FROM exam_schedule WHERE slot = '{i}3'")
+        row3 = cursor.fetchone()
+        if row1 and row2 and row3:
+            a = set(json.loads(row1[0]))
+            b = set(json.loads(row2[0]))
+            c = set(json.loads(row3[0]))
+
+        else:
+            connection.close()
+            return -2  # exam slot does not exist
+
+        sets_ab = [a,b]
+        sets_bc = [b, c]
+        sets_ac = [a, c]
+        sets_abc = [a,b,c]
+
+        common_elements_ab = json.dumps(list(set.intersection(*sets_ab)))
+        common_elements_bc = json.dumps(list(set.intersection(*sets_bc)))
+        common_elements_ac = json.dumps(list(set.intersection(*sets_ac)))
+        common_elements_abc = json.dumps(list(set.intersection(*sets_abc)))
+
+        new_row = [(i,common_elements_ab,common_elements_bc,common_elements_ac,common_elements_abc),]
+        cursor.executemany("INSERT INTO analysis VALUES(?,?,?,?,?)", new_row)
+
+    connection.commit()
+    connection.close()
+    return 1
+
 
 
 if __name__ == "__main__":
     #clear_exam_scheduling_data(db_filepath)
-    content=initialize_scheduling(db_filepath=db_filepath)
-    first_draft(db_filepath=db_filepath,content=content)
+    #content=initialize_scheduling(db_filepath=db_filepath)
+    #first_draft(db_filepath=db_filepath,content=content)
     #value = deschedule_course(db_filepath=db_filepath,exam_slot="13",course="CYP502")
     #value=schedule_course(db_filepath=db_filepath,exam_slot="32",course="CYP502")
     #print(value)
+    analysis(db_filepath)

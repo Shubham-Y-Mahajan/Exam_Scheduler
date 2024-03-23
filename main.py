@@ -83,10 +83,18 @@ class MainWindow(QMainWindow):
 
         self.table2.verticalHeader().setVisible(False)
 
+        """ analysis table"""
+        self.table3 = QTableWidget()
+        self.table3.setColumnCount(5)
+        self.table3.setHorizontalHeaderLabels(("Day","ab","bc","ac","abc"))
+
+
+        self.table3.verticalHeader().setVisible(False)
         # Create a layout to arrange the tables
-        layout = QVBoxLayout(central_widget)
-        layout.addWidget(self.table1)
-        layout.addWidget(self.table2)
+        layout = QGridLayout(central_widget)
+        layout.addWidget(self.table1,1,1,1,2)
+        layout.addWidget(self.table2,2,1,1,1)
+        layout.addWidget(self.table3,2,2,1,1)
 
         # create a toolbar and add toolbar elements
         # By default in toolbar icons are used if QIcons elemnt is present
