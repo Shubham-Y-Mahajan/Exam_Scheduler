@@ -157,9 +157,11 @@ def schedule_course(db_filepath,exam_slot,course):
     return 1 # success
 
 
-def analysis(db_filepath):
+def update_analysis(db_filepath):
+
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
+    cursor.execute("DELETE FROM analysis")
     cursor.execute("SELECT days FROM constraints")
     row = cursor.fetchone()
 
@@ -198,6 +200,20 @@ def analysis(db_filepath):
     connection.close()
     return 1
 
+def current_analysis(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM analysis")
+    rows = cursor.fetchall()
+    result = []
+    for tple in rows:
+        result.append([tple[0], len(json.loads(tple[1])), len(json.loads(tple[2])), len(json.loads(tple[3])),
+                       len(json.loads(tple[4]))])
+
+
+    connection.close()
+    return result
 
 
 if __name__ == "__main__":
@@ -207,4 +223,4 @@ if __name__ == "__main__":
     #value = deschedule_course(db_filepath=db_filepath,exam_slot="13",course="CYP502")
     #value=schedule_course(db_filepath=db_filepath,exam_slot="32",course="CYP502")
     #print(value)
-    analysis(db_filepath)
+    update_analysis(db_filepath)

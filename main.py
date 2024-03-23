@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdi
     QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout, QToolBar, QStatusBar, QMessageBox
 
 import sys
-from backend import schedule_course,deschedule_course
+from backend import schedule_course,deschedule_course,update_analysis,current_analysis
 
 from database import clear_exam_schedule_table,clear_course_slot_db,initialize_exam_schedule_table\
     ,populate_course_table,csv_to_db ,clear_student_enrollment_data
@@ -177,7 +177,7 @@ class MainWindow(QMainWindow):
             result.append([tple[0],len(json.loads(tple[1])),len(json.loads(tple[2])),len(json.loads(tple[3])),len(json.loads(tple[4]))])
 
 
-        print(result)
+
         self.table3.setRowCount(0)
         # This command resets the table , thus whenever u run the program you wont get duplicate data
         for row_number, row_data in enumerate(result):
@@ -292,6 +292,8 @@ class DatabaseDialog(QDialog):
         clear_exam_scheduling_data(db_filepath)  # exam _schedule table empty but initialized ( [], [])
         content = initialize_scheduling(db_filepath=db_filepath)
         first_draft(db_filepath=db_filepath,content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
+        update_analysis(db_filepath=db_filepath)
+        window.load_analysis()
         window.load_not_scheduled()
         window.load_exam_schedule()
         self.message_box()
@@ -301,6 +303,8 @@ class DatabaseDialog(QDialog):
         initialize_exam_schedule_table(db_filepath=db_filepath)  # initialization ( [] , [] )
         content = initialize_scheduling(db_filepath=db_filepath)
         first_draft(db_filepath=db_filepath,content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
+        update_analysis(db_filepath=db_filepath)
+        window.load_analysis()
         window.load_not_scheduled()
         window.load_exam_schedule()
         self.message_box()
@@ -313,6 +317,8 @@ class DatabaseDialog(QDialog):
         populate_course_table(db_filepath)  # student enrollment data se course_data table fill hoga then usse slot data filled
         content = initialize_scheduling(db_filepath=db_filepath)
         first_draft(db_filepath=db_filepath,content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
+        update_analysis(db_filepath=db_filepath)
+        window.load_analysis()
         window.load_not_scheduled()
         window.load_exam_schedule()
         self.message_box()
@@ -321,56 +327,58 @@ class ScheduleDialog(QDialog):
         super().__init__()
 
 
+        try:
+            self.setWindowTitle("Schedule Course")
+            self.setFixedWidth(300)
+            self.setFixedHeight(300)
 
-        self.setWindowTitle("Schedule Course")
-        self.setFixedWidth(300)
-        self.setFixedHeight(300)
+            layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
 
-        layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
+            # Widgets
+            # course code
+            selected_row=window.table2.currentRow()
+            selected_column=window.table2.currentColumn()
+            #print(selected_column)
+            #print(selected_row)
 
-        # Widgets
-        # course code
-        selected_row=window.table2.currentRow()
-        selected_column=window.table2.currentColumn()
-        #print(selected_column)
-        #print(selected_row)
+            not_scheduled_list=self.extract_not_scheduled()
+            # 5 is size of sublist
+            index=(selected_row*5)+selected_column
 
-        not_scheduled_list=self.extract_not_scheduled()
-        # 5 is size of sublist
-        index=(selected_row*5)+selected_column
-
-        selected_code=not_scheduled_list[index]
-
-
+            selected_code=not_scheduled_list[index]
 
 
-        self.course_code = QLineEdit(selected_code)
-        self.course_code.setPlaceholderText("Course Code")
-        layout.addWidget(self.course_code)
-
-        #  courses drop down list
-
-        self.slot = QComboBox()
-        connection = DatabaseConnection().connection()
-        cursor = connection.cursor()
-        cursor.execute("SELECT slot FROM exam_schedule")
-
-        rows = cursor.fetchall()
-
-        lst_of_tples = rows
-        lst = [item[0] for item in lst_of_tples]
-
-        self.slot.addItems(lst)
-
-        layout.addWidget(self.slot)
 
 
-        # update button
-        button = QPushButton("Submit")
-        button.clicked.connect(self.Schedule)
-        layout.addWidget(button)
+            self.course_code = QLineEdit(selected_code)
+            self.course_code.setPlaceholderText("Course Code")
+            layout.addWidget(self.course_code)
 
-        self.setLayout(layout)
+            #  courses drop down list
+
+            self.slot = QComboBox()
+            connection = DatabaseConnection().connection()
+            cursor = connection.cursor()
+            cursor.execute("SELECT slot FROM exam_schedule")
+
+            rows = cursor.fetchall()
+
+            lst_of_tples = rows
+            lst = [item[0] for item in lst_of_tples]
+
+            self.slot.addItems(lst)
+
+            layout.addWidget(self.slot)
+
+
+            # update button
+            button = QPushButton("Submit")
+            button.clicked.connect(self.Schedule)
+            layout.addWidget(button)
+
+            self.setLayout(layout)
+        except AttributeError:
+            pass
 
     def extract_not_scheduled(self):
         connection = DatabaseConnection().connection()
@@ -386,23 +394,79 @@ class ScheduleDialog(QDialog):
 
 
     def Schedule(self):
-        exam_slot = self.slot.itemText(self.slot.currentIndex())
-        course = self.course_code.text()
+        self.exam_slot = self.slot.itemText(self.slot.currentIndex())
+        self.course = self.course_code.text()
+        was = current_analysis(db_filepath=db_filepath)
+        value=schedule_course(db_filepath=db_filepath,exam_slot=self.exam_slot,course=self.course)
 
-        value=schedule_course(db_filepath=db_filepath,exam_slot=exam_slot,course=course)
 
         if value == 1 :
 
-            window.load_exam_schedule()
-            window.load_not_scheduled()
-            self.close()  # the dialog box closes
 
-            # Creating confirmation message box
-            # the purpose of a Q meesage box is to show prompts and messages
-            confirmation_widget = QMessageBox()
-            confirmation_widget.setWindowTitle("Success")
-            confirmation_widget.setText("The course was scheduled successfully")
-            confirmation_widget.exec()
+            update_analysis(db_filepath=db_filepath)
+            will_be = current_analysis(db_filepath=db_filepath)
+            self.close()  # the dialog box closes
+            """analysis dialog box"""
+            day = int(self.exam_slot[0])
+
+
+            self.dialog_box = QDialog()
+            self.dialog_box.setMinimumSize(300, 200)
+            self.dialog_box.setWindowTitle("Confirmation")
+
+            layout = QVBoxLayout()
+
+            self.dialog_box.table1 = QTableWidget()
+            self.dialog_box.table1.setColumnCount(5)
+            self.dialog_box.table1.setHorizontalHeaderLabels(("Day","ab","bc","ac","abc"))
+            self.dialog_box.table1.verticalHeader().setVisible(False)
+            self.dialog_box.table1.setRowCount(0)
+
+
+
+            display=[]
+            display.append(was[day-1])
+
+            for row_number, row_data in enumerate(display):
+
+                self.dialog_box.table1.insertRow(row_number)
+                for column_number, data in enumerate(row_data):
+                    self.dialog_box.table1.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
+            self.dialog_box.table2 = QTableWidget()
+            self.dialog_box.table2.setColumnCount(5)
+            self.dialog_box.table2.setHorizontalHeaderLabels(("Day", "ab", "bc", "ac", "abc"))
+            self.dialog_box.table2.verticalHeader().setVisible(False)
+            self.dialog_box.table2.setRowCount(0)
+
+            display = []
+            display.append(will_be[day - 1])
+            for row_number, row_data in enumerate(display):
+
+                self.dialog_box.table2.insertRow(row_number)
+                for column_number, data in enumerate(row_data):
+                    self.dialog_box.table2.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
+
+
+
+
+            layout.addWidget(self.dialog_box.table1)
+            layout.addWidget(self.dialog_box.table2)
+
+            button1 = QPushButton("Apply")
+            button1.clicked.connect(self.apply)  # Fix: Connect to the close method without parentheses
+            layout.addWidget(button1)
+
+            button2 = QPushButton("Cancel")
+            button2.clicked.connect(self.cancel)  # Fix: Connect to the close method without parentheses
+            layout.addWidget(button2)
+
+            self.dialog_box.setLayout(layout)
+
+            self.dialog_box.exec()
+
+
 
         elif value == -1:
             self.close()  # the dialog box closes
@@ -462,44 +526,70 @@ class ScheduleDialog(QDialog):
 
             dialog_box.exec()
 
+    def apply(self):
+        self.dialog_box.close()
+        window.load_exam_schedule()
+        window.load_not_scheduled()
+
+        window.load_analysis()
+
+        # Creating confirmation message box
+        # the purpose of a Q meesage box is to show prompts and messages
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The course was scheduled successfully")
+        confirmation_widget.exec()
+
+    def cancel(self):
+        self.dialog_box.close()
+        deschedule_course(db_filepath=db_filepath,exam_slot=self.exam_slot,course=self.course)
+        update_analysis(db_filepath=db_filepath)
+
+        window.load_analysis()
+
+
+
 class DescheduleDialog(QDialog):
     def __init__(self):
         super().__init__()
+        try:
+            self.setWindowTitle("Deschedule Course")
+            self.setFixedWidth(300)
+            self.setFixedHeight(300)
 
-        self.setWindowTitle("Deschedule Course")
-        self.setFixedWidth(300)
-        self.setFixedHeight(300)
-        index = window.table1.currentRow()
-        slot = window.table1.item(index, 0).text()
-        courses_string = window.table1.item(index, 1).text()
-        layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
+            index = window.table1.currentRow()
+            slot = window.table1.item(index, 0).text()
+            courses_string = window.table1.item(index, 1).text()
+            layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
 
-        self.slot= QLineEdit(slot)
-        self.slot.setPlaceholderText("Slot")
-        layout.addWidget(self.slot)
+            self.slot= QLineEdit(slot)
+            self.slot.setPlaceholderText("Slot")
+            layout.addWidget(self.slot)
 
-        #  courses drop down list
+            #  courses drop down list
 
-        self.courses = QComboBox()
+            self.courses = QComboBox()
 
-        lst=courses_string.split(",")
-
-
-        for i in range(len(lst)):
-            lst[i] = lst[i].strip()
+            lst=courses_string.split(",")
 
 
-        self.courses.addItems(lst)
+            for i in range(len(lst)):
+                lst[i] = lst[i].strip()
 
-        layout.addWidget(self.courses)
+
+            self.courses.addItems(lst)
+
+            layout.addWidget(self.courses)
 
 
-        # update button
-        button = QPushButton("Submit")
-        button.clicked.connect(self.Deschedule)
-        layout.addWidget(button)
+            # update button
+            button = QPushButton("Submit")
+            button.clicked.connect(self.Deschedule)
+            layout.addWidget(button)
 
-        self.setLayout(layout)
+            self.setLayout(layout)
+        except AttributeError:
+            pass
 
     def Deschedule(self):
         course = self.courses.itemText(self.courses.currentIndex())
@@ -508,9 +598,10 @@ class DescheduleDialog(QDialog):
         value = deschedule_course(db_filepath=db_filepath, exam_slot=exam_slot, course=course)
         print(value)
         if value == 1:
-
+            update_analysis(db_filepath)
             window.load_exam_schedule()
             window.load_not_scheduled()
+            window.load_analysis()
             self.close()  # the dialog box closes
 
             # Creating confirmation message box
