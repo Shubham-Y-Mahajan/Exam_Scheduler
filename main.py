@@ -1,3 +1,4 @@
+import json
 import sqlite3
 
 from PyQt6.QtCore import Qt
@@ -165,6 +166,28 @@ class MainWindow(QMainWindow):
                 # setItem is used to populate the empty row with data
         connection.close()
 
+    def load_analysis(self):
+        connection = DatabaseConnection().connection()
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT * FROM analysis")
+        rows = cursor.fetchall()
+        result=[]
+        for tple in rows:
+            result.append([tple[0],len(json.loads(tple[1])),len(json.loads(tple[2])),len(json.loads(tple[3])),len(json.loads(tple[4]))])
+
+
+        print(result)
+        self.table3.setRowCount(0)
+        # This command resets the table , thus whenever u run the program you wont get duplicate data
+        for row_number, row_data in enumerate(result):
+            self.table3.insertRow(row_number)
+            # This inserts an empty row in the window
+            for column_number, data in enumerate(row_data):
+                # row_data is a tuple where each element of tuple is a column item
+                self.table3.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+                # setItem is used to populate the empty row with data
+        connection.close()
     def cell_clicked_table1(self):
         Deschedule_button = QPushButton("Deschedule Course")
         Deschedule_button.clicked.connect(self.deschedule)
@@ -744,4 +767,5 @@ window = MainWindow()
 window.show()
 window.load_exam_schedule()
 window.load_not_scheduled()
+window.load_analysis()
 sys.exit(app.exec())
