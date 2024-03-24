@@ -413,7 +413,7 @@ class ScheduleDialog(QDialog):
             self.dialog_box = QDialog()
             self.dialog_box.setMinimumSize(300, 200)
             self.dialog_box.setWindowTitle("Confirmation")
-
+            self.dialog_box.setMinimumSize(550,400)
             layout = QVBoxLayout()
 
             self.dialog_box.table1 = QTableWidget()
@@ -551,8 +551,9 @@ class ScheduleDialog(QDialog):
 
 class DescheduleDialog(QDialog):
     def __init__(self):
-        super().__init__()
         try:
+            super().__init__()
+
             self.setWindowTitle("Deschedule Course")
             self.setFixedWidth(300)
             self.setFixedHeight(300)
@@ -592,24 +593,68 @@ class DescheduleDialog(QDialog):
             pass
 
     def Deschedule(self):
-        course = self.courses.itemText(self.courses.currentIndex())
-        exam_slot= self.slot.text()
+        self.course = self.courses.itemText(self.courses.currentIndex())
+        self.exam_slot= self.slot.text()
+        was=current_analysis(db_filepath)
+        value = deschedule_course(db_filepath=db_filepath, exam_slot=self.exam_slot, course=self.course)
 
-        value = deschedule_course(db_filepath=db_filepath, exam_slot=exam_slot, course=course)
-        print(value)
         if value == 1:
-            update_analysis(db_filepath)
-            window.load_exam_schedule()
-            window.load_not_scheduled()
-            window.load_analysis()
+            update_analysis(db_filepath=db_filepath)
+            will_be = current_analysis(db_filepath=db_filepath)
             self.close()  # the dialog box closes
+            """analysis dialog box"""
+            day = int(self.exam_slot[0])
 
-            # Creating confirmation message box
-            # the purpose of a Q meesage box is to show prompts and messages
-            confirmation_widget = QMessageBox()
-            confirmation_widget.setWindowTitle("Success")
-            confirmation_widget.setText("The course was descheduled successfully")
-            confirmation_widget.exec()
+            self.dialog_box = QDialog()
+            self.dialog_box.setMinimumSize(300, 200)
+            self.dialog_box.setWindowTitle("Confirmation")
+            self.dialog_box.setMinimumSize(550,400)
+            layout = QVBoxLayout()
+
+            self.dialog_box.table1 = QTableWidget()
+            self.dialog_box.table1.setColumnCount(5)
+            self.dialog_box.table1.setHorizontalHeaderLabels(("Day", "ab", "bc", "ac", "abc"))
+            self.dialog_box.table1.verticalHeader().setVisible(False)
+            self.dialog_box.table1.setRowCount(0)
+
+            display = []
+            display.append(was[day - 1])
+
+            for row_number, row_data in enumerate(display):
+
+                self.dialog_box.table1.insertRow(row_number)
+                for column_number, data in enumerate(row_data):
+                    self.dialog_box.table1.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
+            self.dialog_box.table2 = QTableWidget()
+            self.dialog_box.table2.setColumnCount(5)
+            self.dialog_box.table2.setHorizontalHeaderLabels(("Day", "ab", "bc", "ac", "abc"))
+            self.dialog_box.table2.verticalHeader().setVisible(False)
+            self.dialog_box.table2.setRowCount(0)
+
+            display = []
+            display.append(will_be[day - 1])
+            for row_number, row_data in enumerate(display):
+
+                self.dialog_box.table2.insertRow(row_number)
+                for column_number, data in enumerate(row_data):
+                    self.dialog_box.table2.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
+            layout.addWidget(self.dialog_box.table1)
+            layout.addWidget(self.dialog_box.table2)
+
+            button1 = QPushButton("Apply")
+            button1.clicked.connect(self.apply)  # Fix: Connect to the close method without parentheses
+            layout.addWidget(button1)
+
+            button2 = QPushButton("Cancel")
+            button2.clicked.connect(self.cancel)  # Fix: Connect to the close method without parentheses
+            layout.addWidget(button2)
+
+            self.dialog_box.setLayout(layout)
+
+            self.dialog_box.exec()
+
 
         elif value == -1:
             self.close()  # the dialog box closes
@@ -633,7 +678,26 @@ class DescheduleDialog(QDialog):
                                         "b) Course Code and Exam Slot don't match")
             confirmation_widget.exec()
 
+    def apply(self):
+        self.dialog_box.close()
+        window.load_exam_schedule()
+        window.load_not_scheduled()
 
+        window.load_analysis()
+
+        # Creating confirmation message box
+        # the purpose of a Q meesage box is to show prompts and messages
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The course was descheduled successfully")
+        confirmation_widget.exec()
+
+    def cancel(self):
+        self.dialog_box.close()
+        schedule_course(db_filepath=db_filepath, exam_slot=self.exam_slot, course=self.course)
+        update_analysis(db_filepath=db_filepath)
+
+        window.load_analysis()
 
 
 class AboutDialog(QMessageBox):
