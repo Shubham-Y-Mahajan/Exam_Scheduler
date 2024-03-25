@@ -160,6 +160,7 @@ class MainWindow(QMainWindow):
         for tple in rows:
             not_scheduled_course_list.append(tple[0])
 
+        not_scheduled_course_list.reverse()
         connection = DatabaseConnection().connection()
         cursor = connection.cursor()
         cursor.execute("SELECT sublist_size FROM constraints")
@@ -221,8 +222,8 @@ class MainWindow(QMainWindow):
     def cell_clicked_table2(self):
         Schedule_button = QPushButton("Schedule Course")
         Schedule_button.clicked.connect(self.schedule)
-        delete_button = QPushButton("Delete Record")
-        #delete_button.clicked.connect(self.delete)
+        delete_button = QPushButton("Remove Course")
+        delete_button.clicked.connect(self.delete)
 
         display_button = QPushButton("Change Display")
         display_button.clicked.connect(self.change_display)
@@ -324,25 +325,79 @@ class MainWindow(QMainWindow):
         constraints_dialog = ConstraintsDialog()
         constraints_dialog.exec()
 
-    def insert(self):
-        dialog_insert = InsertDialog()
-        dialog_insert.exec()  # opens new window
 
-    def search(self):
-        dialog_search = SearchDialog()
-        dialog_search.exec()
-
-    def edit(self):
-        dialog = EditDialog()
-        dialog.exec()
 
     def delete(self):
-        dialog = DeleteDialog()
-        dialog.exec()
+        delete_dialog=DeleteDialog()
+        delete_dialog.exec()
+
+
 
     def about(self):
         dialog = AboutDialog()
         dialog.exec()
+
+class DeleteDialog(QDialog):
+    def __init__(self):
+        try:
+            super().__init__()
+
+            self.setWindowTitle("Remove Course ?")
+            self.setFixedWidth(300)
+            self.setFixedHeight(300)
+
+            selected_row = window.table2.currentRow()
+            selected_column = window.table2.currentColumn()
+
+            not_scheduled_list = extract_not_scheduled(db_filepath=db_filepath)
+            not_scheduled_list.reverse()  # kyuki load me bhi reverse kiay
+            connection = DatabaseConnection().connection()
+            cursor = connection.cursor()
+            cursor.execute("SELECT sublist_size FROM constraints")
+            row = cursor.fetchone()
+            sublist_size = row[0]
+            connection.close()
+
+            index = (selected_row * sublist_size) + selected_column
+
+            self.selected_code = not_scheduled_list[index]
+
+            layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
+
+            label1 = QLabel(f"Remove {self.selected_code}?")
+            label1.setFixedHeight(20)
+            layout.addWidget(label1)
+
+
+            # update button
+            button = QPushButton("Remove")
+            button.clicked.connect(self.apply)
+            layout.addWidget(button)
+
+            button2 = QPushButton("Cancel")
+            button2.clicked.connect(self.close)
+            layout.addWidget(button2)
+
+            self.setLayout(layout)
+        except AttributeError and IndexError:
+            pass
+
+
+    def apply(self):
+
+
+        self.close()
+
+        connection = sqlite3.connect(db_filepath)
+        cursor = connection.cursor()
+
+        cursor.execute(f"DELETE FROM not_scheduled WHERE course_code = '{self.selected_code}' ")
+
+        connection.commit()
+        connection.close()
+
+        window.load_not_scheduled()
+
 
 
 class ConstraintsDialog(QDialog):
@@ -537,12 +592,17 @@ class ScheduleDialog(QDialog):
             # course code
             selected_row=window.table2.currentRow()
             selected_column=window.table2.currentColumn()
-            #print(selected_column)
-            #print(selected_row)
 
-            not_scheduled_list=self.extract_not_scheduled()
-            # 5 is size of sublist
-            index=(selected_row*5)+selected_column
+            not_scheduled_list=extract_not_scheduled(db_filepath=db_filepath)
+            not_scheduled_list.reverse() # kyuki load me bhi reverse kiay
+            connection = DatabaseConnection().connection()
+            cursor = connection.cursor()
+            cursor.execute("SELECT sublist_size FROM constraints")
+            row = cursor.fetchone()
+            sublist_size = row[0]
+            connection.close()
+
+            index=(selected_row*sublist_size)+selected_column
 
             self.selected_code=not_scheduled_list[index]
 
@@ -576,20 +636,10 @@ class ScheduleDialog(QDialog):
             layout.addWidget(button)
 
             self.setLayout(layout)
-        except AttributeError:
+        except AttributeError and IndexError:
             pass
 
-    def extract_not_scheduled(self):
-        connection = DatabaseConnection().connection()
-        cursor = connection.cursor()
 
-        cursor.execute("SELECT course_code FROM not_scheduled")
-        rows = cursor.fetchall()
-        not_scheduled_course_list = []
-        for tple in rows:
-            not_scheduled_course_list.append(tple[0])
-        connection.close()
-        return not_scheduled_course_list
 
 
     def Schedule(self):
@@ -913,6 +963,18 @@ class AboutDialog(QMessageBox):
         # self itself is the Mesage box instance
 
 
+"""  --  --   -- Common function definitions  --   --  --  """
+def extract_not_scheduled(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT course_code FROM not_scheduled")
+    rows = cursor.fetchall()
+    not_scheduled_course_list = []
+    for tple in rows:
+        not_scheduled_course_list.append(tple[0])
+    connection.close()
+    return not_scheduled_course_list
 
 
 
