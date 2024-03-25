@@ -405,38 +405,52 @@ class ConstraintsDialog(QDialog):
 
 
     def apply(self):
-        self.close()
-        days=self.days.text()
-        slots=self.slots.text()
-        max_capacity=self.capacity.text()
-        t2c=self.sublist_size
-        connection = sqlite3.connect(db_filepath)
-        cursor = connection.cursor()
 
-        cursor.execute("DELETE FROM constraints")
-        new_row = [(days,slots,max_capacity,t2c),]
-        cursor.executemany("INSERT INTO constraints VALUES(?,?,?,?)", new_row)
+        try:
+            self.close()
+            days=int(self.days.text())
+            slots=int(self.slots.text())
+            max_capacity=int(self.capacity.text())
+            t2c=int(self.sublist_size)
+            if days >0 and slots > 0 and max_capacity > 0 and t2c >0 :
+                connection = sqlite3.connect(db_filepath)
+                cursor = connection.cursor()
 
-        connection.commit()
-        connection.close()
+                cursor.execute("DELETE FROM constraints")
+                new_row = [(days,slots,max_capacity,t2c),]
+                cursor.executemany("INSERT INTO constraints VALUES(?,?,?,?)", new_row)
 
-        """ Changed constraints database """
-        
-        clear_exam_schedule_table(db_filepath=db_filepath)  # clean wipe
-        initialize_exam_schedule_table(db_filepath=db_filepath)  # initialization ( [] , [] )
-        content = initialize_scheduling(db_filepath=db_filepath)
-        first_draft(db_filepath=db_filepath,
-                    content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
-        update_analysis(db_filepath=db_filepath)
-        window.load_analysis()
-        window.load_not_scheduled()
-        window.load_exam_schedule()
+                connection.commit()
+                connection.close()
+
+                """ Changed constraints database """
+
+                clear_exam_schedule_table(db_filepath=db_filepath)  # clean wipe
+                initialize_exam_schedule_table(db_filepath=db_filepath)  # initialization ( [] , [] )
+                content = initialize_scheduling(db_filepath=db_filepath)
+                first_draft(db_filepath=db_filepath,
+                            content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
+                update_analysis(db_filepath=db_filepath)
+                window.load_analysis()
+                window.load_not_scheduled()
+                window.load_exam_schedule()
 
 
-        confirmation_widget = QMessageBox()
-        confirmation_widget.setWindowTitle("Success")
-        confirmation_widget.setText("The constraints changed successfully")
-        confirmation_widget.exec()
+                confirmation_widget = QMessageBox()
+                confirmation_widget.setWindowTitle("Success")
+                confirmation_widget.setText("The constraints changed successfully")
+                confirmation_widget.exec()
+            else:
+                confirmation_widget = QMessageBox()
+                confirmation_widget.setWindowTitle("Error")
+                confirmation_widget.setText("Kindly enter valid numbers > 0")
+                confirmation_widget.exec()
+
+        except ValueError: # int check
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Error")
+            confirmation_widget.setText("Kindly enter valid integer")
+            confirmation_widget.exec()
 
 
 
@@ -530,14 +544,14 @@ class ScheduleDialog(QDialog):
             # 5 is size of sublist
             index=(selected_row*5)+selected_column
 
-            selected_code=not_scheduled_list[index]
+            self.selected_code=not_scheduled_list[index]
 
 
 
 
-            self.course_code = QLineEdit(selected_code)
-            self.course_code.setPlaceholderText("Course Code")
-            layout.addWidget(self.course_code)
+            label = QLabel(self.selected_code)
+            label.setFixedHeight(20)
+            layout.addWidget(label)
 
             #  courses drop down list
 
@@ -580,7 +594,7 @@ class ScheduleDialog(QDialog):
 
     def Schedule(self):
         self.exam_slot = self.slot.itemText(self.slot.currentIndex())
-        self.course = self.course_code.text()
+        self.course = self.selected_code
         was = current_analysis(db_filepath=db_filepath)
         value=schedule_course(db_filepath=db_filepath,exam_slot=self.exam_slot,course=self.course)
 
@@ -744,13 +758,14 @@ class DescheduleDialog(QDialog):
             self.setFixedHeight(300)
 
             index = window.table1.currentRow()
-            slot = window.table1.item(index, 0).text()
+            self.slot = window.table1.item(index, 0).text()
             courses_string = window.table1.item(index, 1).text()
             layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
 
-            self.slot= QLineEdit(slot)
-            self.slot.setPlaceholderText("Slot")
-            layout.addWidget(self.slot)
+            label= QLabel(self.slot)
+
+            layout.addWidget(label)
+            label.setFixedHeight(20)
 
             #  courses drop down list
 
@@ -779,7 +794,7 @@ class DescheduleDialog(QDialog):
 
     def Deschedule(self):
         self.course = self.courses.itemText(self.courses.currentIndex())
-        self.exam_slot= self.slot.text()
+        self.exam_slot=self.slot
         was=current_analysis(db_filepath)
         value = deschedule_course(db_filepath=db_filepath, exam_slot=self.exam_slot, course=self.course)
 
@@ -898,208 +913,7 @@ class AboutDialog(QMessageBox):
         # self itself is the Mesage box instance
 
 
-class EditDialog(QDialog):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Update Student Data")
-        self.setFixedWidth(300)
-        self.setFixedHeight(300)
 
-        layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
-
-        # get index of row which is selected which is selected
-        index = window.table.currentRow()
-        column=window.table.currentColumn()
-        print(column)
-
-
-        # from row get student name
-        student_name = window.table.item(index, 1).text()
-        # from row get id
-        self.student_id = window.table.item(index, 0).text()
-        # from row get mobile and course
-        Course = window.table.item(index, 2).text()
-        mobile = window.table.item(index, 3).text()
-
-        # Widgets
-        # student name
-        self.student_name = QLineEdit(student_name)
-        self.student_name.setPlaceholderText("Name")
-        layout.addWidget(self.student_name)
-
-        #  courses drop down list
-
-        self.course_name = QComboBox()
-        courses = ["Biology", "Math", "Astronomy", "Physics"]
-        self.course_name.addItems(courses)
-        self.course_name.setCurrentText(Course)
-        layout.addWidget(self.course_name)
-
-        #  mobile number
-
-        self.mobile = QLineEdit(mobile)
-        self.mobile.setPlaceholderText("Mobile")
-        layout.addWidget(self.mobile)
-
-        # update button
-        button = QPushButton("Update")
-        button.clicked.connect(self.update_student)
-        layout.addWidget(button)
-
-        self.setLayout(layout)
-
-    def update_student(self):
-        connection = DatabaseConnection().connection()
-        cursor = connection.cursor()
-        cursor.execute("UPDATE students SET name = ?, course = ?, mobile = ? WHERE id = ?",
-                       (self.student_name.text(),
-                        self.course_name.itemText(self.course_name.currentIndex())
-                        , self.mobile.text(),
-                        self.student_id))
-        connection.commit()
-        cursor.close()
-        connection.close()
-
-        # Refresh the table
-        window.load_data()
-
-
-class DeleteDialog(QDialog):
-    def __init__(self): # executed automatically
-        super().__init__()
-        self.setWindowTitle("Delete Student Data")
-
-        layout = QGridLayout()
-
-        confirmation = QLabel("are you sure you want to delete?")
-        yes = QPushButton("Yes")
-        no = QPushButton("No")
-
-        layout.addWidget(confirmation, 0, 0, 1, 2)
-        layout.addWidget(yes, 1, 0)
-        layout.addWidget(no, 1, 1)
-        self.setLayout(layout)
-        yes.clicked.connect(self.delete_student)
-
-    def delete_student(self):
-        # get index of row which is selected which is selected
-        index = window.table.currentRow()
-
-        # from row get student name
-        student_name = window.table.item(index, 1).text()
-        # from row get id
-        student_id = window.table.item(index, 0).text()
-        # from row get mobile and course
-        Course = window.table.item(index, 2).text()
-        mobile = window.table.item(index, 3).text()
-
-        connection = DatabaseConnection().connection()
-        cursor = connection.cursor()
-
-        cursor.execute("DELETE from students WHERE id = ?", (student_id,))
-        connection.commit()
-        cursor.close()
-        connection.close()
-
-        window.load_data()
-
-        self.close()  # the dialog box closes
-
-        # Creating confirmation message box
-        # the purpose of a Q meesage box is to show prompts and messages
-        confirmation_widget = QMessageBox()
-        confirmation_widget.setWindowTitle("Success")
-        confirmation_widget.setText("The record was deleted successfully")
-        confirmation_widget.exec()
-
-
-# New class for New window
-class InsertDialog(QDialog):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Insert Student Data")
-        self.setFixedWidth(300)
-        self.setFixedHeight(300)
-
-        layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
-
-        # Add student name
-        self.student_name = QLineEdit()
-        self.student_name.setPlaceholderText("Name")
-        layout.addWidget(self.student_name)
-
-        # Add courses drop down list
-        self.course_name = QComboBox()
-        courses = ["Biology", "Math", "Astronomy", "Physics"]
-        self.course_name.addItems(courses)
-        layout.addWidget(self.course_name)
-
-        # add mobile number
-        self.mobile = QLineEdit()
-        self.mobile.setPlaceholderText("Mobile")
-        layout.addWidget(self.mobile)
-
-        # add  submit button
-        button = QPushButton("Register")
-        button.clicked.connect(self.add_student)
-        layout.addWidget(button)
-
-        self.setLayout(layout)
-
-    def add_student(self):
-        name = self.student_name.text()
-        course = self.course_name.itemText(self.course_name.currentIndex())  # for comboboxes
-        mobile = self.mobile.text()
-        connection = DatabaseConnection().connection()
-        cursor = connection.cursor()
-        cursor.execute("INSERT INTO students (name , course , mobile) VALUES (?, ?, ?)",
-                       (name, course, mobile))
-
-        connection.commit()  # for sql
-
-        connection.close()
-        window.load_data()  # to refresh our window
-
-
-class SearchDialog(QDialog):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Search Student Record")
-        self.setFixedWidth(300)
-        self.setFixedHeight(300)
-
-        layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
-
-        # Search student name
-        self.student_name = QLineEdit()
-        self.student_name.setPlaceholderText("Name")
-        layout.addWidget(self.student_name)
-
-        # add  search button
-        button = QPushButton("Register")
-        button.clicked.connect(self.search)
-        layout.addWidget(button)
-        self.setLayout(layout)
-
-    def search(self):
-        name = self.student_name.text()
-        connection = DatabaseConnection().connection()
-        cursor = connection.cursor()
-
-        result = cursor.execute("SELECT * FROM students WHERE name = ?", (name,))
-        # we write (name , ) as we need a comma for python to understand its a tuple
-        rows = list(result)
-        # rows = list of tuples
-
-        items = window.table.findItems(name, Qt.MatchFlag.MatchFixedString)
-        for item in items:
-            window.table.item(item.row(), 1).setSelected(True)
-            # item.row() gives the index of the row which has item
-            # , 1 is to specify the column
-            # thus we are selecting a cell with row= item.row() and column = 1 (here)
-
-
-        connection.close()
 
 
 app = QApplication(sys.argv)
