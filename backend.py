@@ -157,6 +157,51 @@ def schedule_course(db_filepath,exam_slot,course):
     return 1 # success
 
 
+def possible_slots(db_filepath,course):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+
+    cursor.execute(f"SELECT registered_students FROM course_data WHERE course_code = '{course}'")
+    row = cursor.fetchone()
+
+    if row:
+        course_students = set(json.loads(row[0]))
+
+    else:
+        connection.close()
+
+        return -1 # course not present in table
+    cursor.execute(f"SELECT slot from exam_schedule")
+    rows = cursor.fetchall()
+
+    slots=[]
+    for row in rows:
+        slots.append(row[0])
+
+
+    possible=[]
+    for exam_slot in slots:
+        cursor.execute(f"SELECT students FROM exam_schedule WHERE slot = '{exam_slot}'")
+        row = cursor.fetchone()
+        if row:
+            exam_students = set(json.loads(row[0]))
+        else:
+            connection.close()
+            return -2  # exam slot does not exist
+        sets = [exam_students, course_students]
+
+        common_elements = set.intersection(*sets)
+        if not common_elements:
+            possible.append(exam_slot)
+
+    connection.close()
+
+    if possible:
+        return possible
+    else:
+        return 0
+
+
 def update_analysis(db_filepath):
 
     connection = sqlite3.connect(db_filepath)
@@ -223,4 +268,5 @@ if __name__ == "__main__":
     #value = deschedule_course(db_filepath=db_filepath,exam_slot="13",course="CYP502")
     #value=schedule_course(db_filepath=db_filepath,exam_slot="32",course="CYP502")
     #print(value)
-    update_analysis(db_filepath)
+    #update_analysis(db_filepath)
+    print(possible_slots(db_filepath,"CS252"))
