@@ -33,6 +33,18 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1100, 900)  # min window size
         self.showMaximized()
 
+        """ Variables """
+        connection = DatabaseConnection().connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT sublist_size FROM constraints")
+        row = cursor.fetchone()
+        sublist_size = row[0]
+
+
+
+
+
+
         settings_menu_item = self.menuBar().addMenu("&Settings")
         database_menu_item = self.menuBar().addMenu("&Database")
         about_menu_item = self.menuBar().addMenu("&About")
@@ -80,7 +92,7 @@ class MainWindow(QMainWindow):
 
         self.table2 = QTableWidget()
 
-        self.table2.setColumnCount(5)
+        self.table2.setColumnCount(sublist_size)
 
         self.table2.verticalHeader().setVisible(False)
 
@@ -148,9 +160,13 @@ class MainWindow(QMainWindow):
         for tple in rows:
             not_scheduled_course_list.append(tple[0])
 
-        # Set the size of each sublist
-        sublist_size = 5
+        connection = DatabaseConnection().connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT sublist_size FROM constraints")
+        row = cursor.fetchone()
+        sublist_size = row[0]
 
+        self.table2.setColumnCount(sublist_size)
         # Use a list comprehension to create sublists
         result = [not_scheduled_course_list[i:i + sublist_size] for i in
                   range(0, len(not_scheduled_course_list), sublist_size)]
@@ -208,6 +224,9 @@ class MainWindow(QMainWindow):
         delete_button = QPushButton("Delete Record")
         #delete_button.clicked.connect(self.delete)
 
+        display_button = QPushButton("Change Display")
+        display_button.clicked.connect(self.change_display)
+
         # the below steps were taken to avoid duplication of buttons when we click on multiple cells
         children = self.findChildren(QPushButton)
         if children:
@@ -216,6 +235,78 @@ class MainWindow(QMainWindow):
 
         self.statusbar.addWidget(Schedule_button)
         self.statusbar.addWidget(delete_button)
+        self.statusbar.addWidget(display_button)
+
+    def change_display(self):
+        self.sublist_dialog = QDialog()
+        self.sublist_dialog.setMinimumSize(300, 200)
+        self.sublist_dialog.setWindowTitle("Confirmation")
+        self.sublist_dialog.setMinimumSize(550, 400)
+        layout = QVBoxLayout()
+
+        connection = sqlite3.connect(db_filepath)
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT * FROM constraints")
+        rows = cursor.fetchall()
+        self.days = rows[0][0]
+        self.slots = rows[0][1]
+        self.max_capacity = rows[0][2]
+        sublist_size = rows[0][3]
+
+        connection.close()
+
+        label4 = QLabel("Columns in Table 2:")
+        label4.setFixedHeight(20)
+        layout.addWidget(label4)
+
+        self.t2c = QLineEdit(str(sublist_size))
+        self.t2c.setPlaceholderText("Table 2 columns")
+        layout.addWidget(self.t2c)
+
+        button = QPushButton("Apply")
+        button.clicked.connect(self.apply_sublist)
+        layout.addWidget(button)
+
+        button2 = QPushButton("Cancel")
+        button2.clicked.connect(self.sublist_dialog.close)
+        layout.addWidget(button2)
+
+        self.sublist_dialog.setLayout(layout)
+        self.sublist_dialog.exec()
+
+    def apply_sublist(self):
+
+        try:
+            if int(self.t2c.text()) > 0:
+                connection = sqlite3.connect(db_filepath)
+                cursor = connection.cursor()
+                cursor.execute("DELETE FROM constraints")
+                new_row = [(self.days, self.slots, self.max_capacity, int(self.t2c.text())), ]
+                cursor.executemany("INSERT INTO constraints VALUES(?,?,?,?)", new_row)
+
+                connection.commit()
+                connection.close()
+
+                self.sublist_dialog.close()
+
+                window.load_not_scheduled()
+                confirmation_widget = QMessageBox()
+                confirmation_widget.setWindowTitle("Success")
+                confirmation_widget.setText("The constraints changed successfully")
+                confirmation_widget.exec()
+            else:
+                confirmation_widget = QMessageBox()
+                confirmation_widget.setWindowTitle("Error")
+                confirmation_widget.setText("Kindly enter a number > 0")
+                confirmation_widget.exec()
+
+        except ValueError:
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Error")
+            confirmation_widget.setText("Kindly enter valid integer")
+            confirmation_widget.exec()
+
 
     def schedule(self):
         schedule_dialog = ScheduleDialog()
@@ -230,7 +321,7 @@ class MainWindow(QMainWindow):
         database_dialog.exec()
 
     def constraints(self):
-        constraints_dialog = DatabaseDialog()
+        constraints_dialog = ConstraintsDialog()
         constraints_dialog.exec()
 
     def insert(self):
@@ -252,6 +343,100 @@ class MainWindow(QMainWindow):
     def about(self):
         dialog = AboutDialog()
         dialog.exec()
+
+
+class ConstraintsDialog(QDialog):
+    def __init__(self):
+        try:
+            super().__init__()
+
+            self.setWindowTitle("Change Constraints")
+            self.setFixedWidth(300)
+            self.setFixedHeight(300)
+
+            connection = sqlite3.connect(db_filepath)
+            cursor = connection.cursor()
+
+            cursor.execute("SELECT * FROM constraints")
+            rows = cursor.fetchall()
+            days = rows[0][0]
+            slots = rows[0][1]
+            max_capacity = rows[0][2]
+
+            self.sublist_size = rows[0][3] #isme sublist change karna hi nai hai
+            layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
+
+            label1 = QLabel("Days:")
+            label1.setFixedHeight(20)
+            layout.addWidget(label1)
+
+            self.days = QLineEdit(str(days))
+            self.days.setPlaceholderText("Days")
+            layout.addWidget(self.days)
+
+            label2 = QLabel("Slots:")
+            label2.setFixedHeight(20)
+            layout.addWidget(label2)
+
+            self.slots = QLineEdit(str(slots))
+            self.slots.setPlaceholderText("Slots")
+            layout.addWidget(self.slots)
+
+            label3 = QLabel("Max Capacity:")
+            label3.setFixedHeight(20)
+            layout.addWidget(label3)
+
+            self.capacity = QLineEdit(str(max_capacity))
+            self.capacity.setPlaceholderText("Max Capacity")
+            layout.addWidget(self.capacity)
+
+            # update button
+            button = QPushButton("Apply")
+            button.clicked.connect(self.apply)
+            layout.addWidget(button)
+
+            button2 = QPushButton("Cancel")
+            button2.clicked.connect(self.close)
+            layout.addWidget(button2)
+
+            self.setLayout(layout)
+        except AttributeError:
+            pass
+
+
+    def apply(self):
+        self.close()
+        days=self.days.text()
+        slots=self.slots.text()
+        max_capacity=self.capacity.text()
+        t2c=self.sublist_size
+        connection = sqlite3.connect(db_filepath)
+        cursor = connection.cursor()
+
+        cursor.execute("DELETE FROM constraints")
+        new_row = [(days,slots,max_capacity,t2c),]
+        cursor.executemany("INSERT INTO constraints VALUES(?,?,?,?)", new_row)
+
+        connection.commit()
+        connection.close()
+
+        """ Changed constraints database """
+        
+        clear_exam_schedule_table(db_filepath=db_filepath)  # clean wipe
+        initialize_exam_schedule_table(db_filepath=db_filepath)  # initialization ( [] , [] )
+        content = initialize_scheduling(db_filepath=db_filepath)
+        first_draft(db_filepath=db_filepath,
+                    content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
+        update_analysis(db_filepath=db_filepath)
+        window.load_analysis()
+        window.load_not_scheduled()
+        window.load_exam_schedule()
+
+
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The constraints changed successfully")
+        confirmation_widget.exec()
 
 
 
