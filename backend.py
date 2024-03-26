@@ -121,7 +121,15 @@ def schedule_course(db_filepath,exam_slot,course):
         return(clashes)
 
     # no students clashing but checking for slot capacity
-    if (len(exam_students) + len(course_students)) > 700 :
+    """fetching the data of max capacity"""
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT capacity FROM constraints")
+    row = cursor.fetchone()
+    max_capacity = row[0]
+
+    if (len(exam_students) + len(course_students)) > max_capacity:
         connection.close()
         return (len(exam_students) + len(course_students))
 

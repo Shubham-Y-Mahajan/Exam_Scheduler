@@ -486,9 +486,9 @@ class ConstraintsDialog(QDialog):
 
             cursor.execute("SELECT * FROM constraints")
             rows = cursor.fetchall()
-            days = rows[0][0]
-            slots = rows[0][1]
-            max_capacity = rows[0][2]
+            self.fetched_days = rows[0][0]
+            self.fetched_slots = rows[0][1]
+            self.fetched_max_capacity = rows[0][2]
 
             self.sublist_size = rows[0][3] #isme sublist change karna hi nai hai
             layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
@@ -497,7 +497,7 @@ class ConstraintsDialog(QDialog):
             label1.setFixedHeight(20)
             layout.addWidget(label1)
 
-            self.days = QLineEdit(str(days))
+            self.days = QLineEdit(str(self.fetched_days))
             self.days.setPlaceholderText("Days")
             layout.addWidget(self.days)
 
@@ -505,7 +505,7 @@ class ConstraintsDialog(QDialog):
             label2.setFixedHeight(20)
             layout.addWidget(label2)
 
-            self.slots = QLineEdit(str(slots))
+            self.slots = QLineEdit(str(self.fetched_slots))
             self.slots.setPlaceholderText("Slots")
             layout.addWidget(self.slots)
 
@@ -513,7 +513,7 @@ class ConstraintsDialog(QDialog):
             label3.setFixedHeight(20)
             layout.addWidget(label3)
 
-            self.capacity = QLineEdit(str(max_capacity))
+            self.capacity = QLineEdit(str(self.fetched_max_capacity))
             self.capacity.setPlaceholderText("Max Capacity")
             layout.addWidget(self.capacity)
 
@@ -551,16 +551,16 @@ class ConstraintsDialog(QDialog):
                 connection.close()
 
                 """ Changed constraints database """
-
-                clear_exam_schedule_table(db_filepath=db_filepath)  # clean wipe
-                initialize_exam_schedule_table(db_filepath=db_filepath)  # initialization ( [] , [] )
-                content = initialize_scheduling(db_filepath=db_filepath)
-                first_draft(db_filepath=db_filepath,
-                            content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
-                update_analysis(db_filepath=db_filepath)
-                window.load_analysis()
-                window.load_not_scheduled()
-                window.load_exam_schedule()
+                if self.fetched_days != days or self.fetched_slots != slots:
+                    clear_exam_schedule_table(db_filepath=db_filepath)  # clean wipe
+                    initialize_exam_schedule_table(db_filepath=db_filepath)  # initialization ( [] , [] )
+                    content = initialize_scheduling(db_filepath=db_filepath)
+                    first_draft(db_filepath=db_filepath,
+                                content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
+                    update_analysis(db_filepath=db_filepath)
+                    window.load_analysis()
+                    window.load_not_scheduled()
+                    window.load_exam_schedule()
 
 
                 confirmation_widget = QMessageBox()
@@ -812,12 +812,27 @@ class ScheduleDialog(QDialog):
             confirmation_widget.exec()
 
         elif type(value) == int: # value is integer > 700
-            self.close()  # the dialog box closes
-            confirmation_widget = QMessageBox()
-            confirmation_widget.setWindowTitle("Error: Capacity Exceeded")
-            confirmation_widget.setText(f"The course could not be scheduled as the specified capacity was exceeded\n"
-                                        f"Resultant capacity on scheduling would be = {value}")
-            confirmation_widget.exec()
+            #self.close()  # the dialog box closes
+            self.value=value
+            self.allow_dialog=QDialog()
+            self.allow_dialog.setMinimumSize(300, 200)
+            self.allow_dialog.setWindowTitle("Capacity Exceeded")
+            self.allow_dialog.setMinimumSize(550, 400)
+            layout = QVBoxLayout()
+
+            label=QLabel(f"The course could not be scheduled as the specified capacity was exceeded\n"
+                                        f"Resultant capacity on scheduling would be = {self.value}\n\n"
+                         f"Note: If max capacity is incremented , submit course for scheduling again.")
+            layout.addWidget(label)
+            button1 = QPushButton(f"Increase  Max Capacity to {self.value}")
+            button1.clicked.connect(self.increase_capacity)
+            layout.addWidget(button1)
+            button2 = QPushButton("Close")
+            button2.clicked.connect(self.allow_dialog.close)
+            layout.addWidget(button2)
+
+            self.allow_dialog.setLayout(layout)
+            self.allow_dialog.exec()
 
         else : # clash list
             self.close()  # the dialog box closes
@@ -872,7 +887,29 @@ class ScheduleDialog(QDialog):
 
         window.load_analysis()
 
+    def increase_capacity(self):
+        connection = sqlite3.connect(db_filepath)
+        cursor = connection.cursor()
 
+        cursor.execute("SELECT * FROM constraints")
+        rows = cursor.fetchall()
+        days = rows[0][0]
+        slots = rows[0][1]
+        max_capacity = self.value # increased capacity
+
+        t2c = rows[0][3]  # isme sublist change karna hi nai hai
+
+        cursor.execute("DELETE FROM constraints")
+        new_row = [(days, slots, max_capacity, t2c), ]
+        cursor.executemany("INSERT INTO constraints VALUES(?,?,?,?)", new_row)
+
+        connection.commit()
+        connection.close()
+        self.allow_dialog.close()
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText(f"Max Capacity has been incremented to {self.value}")
+        confirmation_widget.exec()
 
 class DescheduleDialog(QDialog):
     def __init__(self):
