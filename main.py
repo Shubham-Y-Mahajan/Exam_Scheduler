@@ -103,11 +103,25 @@ class MainWindow(QMainWindow):
 
 
         self.table3.verticalHeader().setVisible(False)
-        # Create a layout to arrange the tables
+
+
+        """possible table"""
+
+        self.table4 = QTableWidget()
+        self.table4.setColumnCount(1)
+        self.table4.setHorizontalHeaderLabels(("Possibility",))
+        self.table4.setFixedWidth(120)
+        self.table4.verticalHeader().setVisible(False)
+
+
+
+        """"""""""2 rows 8 column idea , row column rowspan colspan"""""""""
         layout = QGridLayout(central_widget)
-        layout.addWidget(self.table1,1,1,1,2)
-        layout.addWidget(self.table2,2,1,1,1)
-        layout.addWidget(self.table3,2,2,1,1)
+        layout.addWidget(self.table1,1,1,1,8)
+        layout.addWidget(self.table2,2,2,1,4)
+        layout.addWidget(self.table4,2,1,1,1)
+        layout.addWidget(self.table3,2,6,1,3)
+
 
         # create a toolbar and add toolbar elements
         # By default in toolbar icons are used if QIcons elemnt is present
@@ -205,6 +219,9 @@ class MainWindow(QMainWindow):
                 self.table3.setItem(row_number, column_number, QTableWidgetItem(str(data)))
                 # setItem is used to populate the empty row with data
         connection.close()
+
+
+
     def cell_clicked_table1(self):
         Deschedule_button = QPushButton("Deschedule Course")
         Deschedule_button.clicked.connect(self.deschedule)
@@ -227,9 +244,6 @@ class MainWindow(QMainWindow):
         Schedule_button = QPushButton("Schedule Course")
         Schedule_button.clicked.connect(self.schedule)
 
-        possible_button=QPushButton("Find Possible Slots")
-        possible_button.clicked.connect(self.alternate_table2)
-
         delete_button = QPushButton("Remove Course")
         delete_button.clicked.connect(self.delete)
 
@@ -243,9 +257,56 @@ class MainWindow(QMainWindow):
                 self.statusbar.removeWidget(child)
 
         self.statusbar.addWidget(Schedule_button)
-        self.statusbar.addWidget(possible_button)
+
         self.statusbar.addWidget(delete_button)
         self.statusbar.addWidget(display_button)
+
+        """Code to display possible slots"""
+        try:
+            selected_row = self.table2.currentRow()
+            selected_column = self.table2.currentColumn()
+
+            not_scheduled_list = extract_not_scheduled(db_filepath=db_filepath)
+            not_scheduled_list.reverse()  # kyuki load me bhi reverse kiay
+            connection = DatabaseConnection().connection()
+            cursor = connection.cursor()
+            cursor.execute("SELECT sublist_size FROM constraints")
+            row = cursor.fetchone()
+            sublist_size = row[0]
+            connection.close()
+
+            index = (selected_row * sublist_size) + selected_column
+
+            self.selected_code = not_scheduled_list[index]
+
+            value = possible_slots(db_filepath=db_filepath, course=self.selected_code)
+            if value:
+                result=[[self.selected_code]]
+                for slot in value:
+                    result.append([slot])
+
+                self.table4.setRowCount(0)
+                # This command resets the table , thus whenever u run the program you wont get duplicate data
+                for row_number, row_data in enumerate(result):
+                    self.table4.insertRow(row_number)
+                    # This inserts an empty row in the window
+                    for column_number, data in enumerate(row_data):
+                        # row_data is a tuple where each element of tuple is a column item
+                        self.table4.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+            else:
+                result = [[self.selected_code],["None"]]
+
+                self.table4.setRowCount(0)
+                # This command resets the table , thus whenever u run the program you wont get duplicate data
+                for row_number, row_data in enumerate(result):
+                    self.table4.insertRow(row_number)
+                    # This inserts an empty row in the window
+                    for column_number, data in enumerate(row_data):
+                        # row_data is a tuple where each element of tuple is a column item
+                        self.table4.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
+        except IndexError:
+            self.table4.setRowCount(0)
 
     def change_display(self):
         self.sublist_dialog = QDialog()
@@ -338,12 +399,6 @@ class MainWindow(QMainWindow):
         alternate_dialog = Alternate1Dialog()
         alternate_dialog.exec()
 
-    def alternate_table2(self):
-        alternate_dialog = Alternate2Dialog()
-        alternate_dialog.exec()
-
-
-
     def delete(self):
         delete_dialog=DeleteDialog()
         delete_dialog.exec()
@@ -404,7 +459,7 @@ class DeleteDialog(QDialog):
 
 
         self.close()
-
+        window.table4.setRowCount(0)
         connection = sqlite3.connect(db_filepath)
         cursor = connection.cursor()
 
@@ -1009,99 +1064,51 @@ class Alternate1Dialog(QDialog):
 
             # update button
             button = QPushButton("Submit")
-            button.clicked.connect(self.find_possible)
+            button.clicked.connect(self.display_possible)
             layout.addWidget(button)
+
+            button2 = QPushButton("Close")
+            button2.clicked.connect(self.close)
+            layout.addWidget(button2)
 
             self.setLayout(layout)
         except AttributeError:
             pass
 
-    def find_possible(self):
+    def display_possible(self):
+        """Code to display possible slots"""
         try:
             self.course = self.courses.itemText(self.courses.currentIndex())
-            value=possible_slots(db_filepath=db_filepath,course=self.course)
+            value = possible_slots(db_filepath=db_filepath, course=self.course)
+
+
             if value:
-                self.close()
-                possibility_dialog=QDialog()
-                possibility_dialog.setMinimumSize(300, 200)
-                possibility_dialog.setWindowTitle("Possible Slots")
+                result = [[self.course]]
+                for slot in value:
+                    result.append([slot])
 
-                layout = QVBoxLayout()
-
-                display_string=" , ".join(value)
-                label=QLabel(f"The possible slots to schedule  {self.course} are :\n\n{display_string}")
-                label.setFixedHeight(50)
-                layout.addWidget(label)
-
-                button1 = QPushButton("Close")
-                button1.clicked.connect(possibility_dialog.close)  # Fix: Connect to the close method without parentheses
-                layout.addWidget(button1)
-
-                possibility_dialog.setLayout(layout)
-
-                possibility_dialog.exec()
-
-
-
+                window.table4.setRowCount(0)
+                # This command resets the table , thus whenever u run the program you wont get duplicate data
+                for row_number, row_data in enumerate(result):
+                    window.table4.insertRow(row_number)
+                    # This inserts an empty row in the window
+                    for column_number, data in enumerate(row_data):
+                        # row_data is a tuple where each element of tuple is a column item
+                        window.table4.setItem(row_number, column_number, QTableWidgetItem(str(data)))
             else:
-                self.close()
-                confirmation_widget = QMessageBox()
-                confirmation_widget.setWindowTitle("No Alternative")
-                confirmation_widget.setText("The given course cannot be shifted to any other slot")
-                confirmation_widget.exec()
-        except TypeError: # raised when blank slot chosen and empty dropdown submitted
-            pass
+                result = [[self.course], ["None"]]
 
+                window.table4.setRowCount(0)
+                # This command resets the table , thus whenever u run the program you wont get duplicate data
+                for row_number, row_data in enumerate(result):
+                    window.table4.insertRow(row_number)
+                    # This inserts an empty row in the window
+                    for column_number, data in enumerate(row_data):
+                        # row_data is a tuple where each element of tuple is a column item
+                        window.table4.setItem(row_number, column_number, QTableWidgetItem(str(data)))
 
-
-class Alternate2Dialog(QDialog):
-    def __init__(self):
-        try:
-            super().__init__()
-
-            self.setWindowTitle("Find Possible Slots")
-            self.setFixedWidth(300)
-            self.setFixedHeight(300)
-
-            layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
-
-
-            selected_row = window.table2.currentRow()
-            selected_column = window.table2.currentColumn()
-
-
-            not_scheduled_list = extract_not_scheduled(db_filepath=db_filepath)
-            not_scheduled_list.reverse()  # kyuki load me bhi reverse kiay
-            connection = DatabaseConnection().connection()
-            cursor = connection.cursor()
-            cursor.execute("SELECT sublist_size FROM constraints")
-            row = cursor.fetchone()
-            sublist_size = row[0]
-            connection.close()
-
-            index = (selected_row * sublist_size) + selected_column
-
-            self.selected_code = not_scheduled_list[index]
-
-            value = possible_slots(db_filepath=db_filepath, course=self.selected_code)
-            if value:
-                display_string = " , ".join(value)
-                label = QLabel(f"The possible slots to schedule  {self.selected_code} are :\n\n{display_string}")
-
-            else:
-                label = QLabel(f"There are no possible slots to schedule this course.")
-
-            label.setFixedHeight(50)
-            layout.addWidget(label)
-
-            # update button
-            button = QPushButton("Close")
-            button.clicked.connect(self.close)
-            layout.addWidget(button)
-
-            self.setLayout(layout)
-        except AttributeError and IndexError: # index error when blank cell chosen
-            pass
+        except IndexError:
+            window.table4.setRowCount(0)
 
 
 class AboutDialog(QMessageBox):
