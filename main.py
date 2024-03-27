@@ -2,7 +2,7 @@ import json
 import sqlite3
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtGui import QAction, QIcon, QColor
 from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdit, QPushButton, QComboBox, QMainWindow, \
     QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout, QToolBar, QStatusBar, QMessageBox
 
@@ -78,24 +78,31 @@ class MainWindow(QMainWindow):
 
         self.table1 = QTableWidget()
         self.table1.setColumnCount(3)
-        self.table1.setHorizontalHeaderLabels(("slot", "courses","Total Students"))
+        self.table1.setHorizontalHeaderLabels(("SLOT", "COURSES", "TOTAL STUDENTS"))
+        self.table1.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
+
         # Set width for a particular column
         self.table1.setColumnWidth(1, 1400)  # Set the width of the second column
+        self.table1.setColumnWidth(2, 160)
 
         self.table1.verticalHeader().setVisible(False)
         # this disables the by default index column that appears in the table
         #self.setCentralWidget(self.table1)  # special for Q main window
 
+
+
         self.table2 = QTableWidget()
 
         self.table2.setColumnCount(sublist_size)
-
+        self.table2.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
         self.table2.verticalHeader().setVisible(False)
+
 
         """ analysis table"""
         self.table3 = QTableWidget()
         self.table3.setColumnCount(5)
         self.table3.setHorizontalHeaderLabels(("Day","ab","bc","ac","abc"))
+        self.table3.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
 
 
         self.table3.verticalHeader().setVisible(False)
@@ -106,6 +113,7 @@ class MainWindow(QMainWindow):
         self.table4 = QTableWidget()
         self.table4.setColumnCount(1)
         self.table4.setHorizontalHeaderLabels(("Possibility",))
+        self.table4.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
         self.table4.setFixedWidth(120)
         self.table4.verticalHeader().setVisible(False)
 
@@ -157,7 +165,15 @@ class MainWindow(QMainWindow):
             # This inserts an empty row in the window
             for column_number, data in enumerate(row_data):
                 # row_data is a tuple where each element of tuple is a column item
-                self.table1.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+                item = QTableWidgetItem(str(data))
+
+                item.setBackground(QColor("antiquewhite"))
+                item.setForeground(QColor("black"))  # Set text color to purple
+
+
+
+                self.table1.setItem(row_number, column_number, item)
+
                 # setItem is used to populate the empty row with data
         connection.close()
     def load_not_scheduled(self):
@@ -188,8 +204,12 @@ class MainWindow(QMainWindow):
             self.table2.insertRow(row_number)
             # This inserts an empty row in the window
             for column_number, data in enumerate(row_data):
-                # row_data is a tuple where each element of tuple is a column item
-                self.table2.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+                item = QTableWidgetItem(str(data))
+                item.setBackground(QColor("lightcyan"))
+                item.setForeground(QColor("black"))  # Set text color to purple
+
+                self.table2.setItem(row_number, column_number, item)
+
                 # setItem is used to populate the empty row with data
         connection.close()
 
@@ -211,8 +231,14 @@ class MainWindow(QMainWindow):
             self.table3.insertRow(row_number)
             # This inserts an empty row in the window
             for column_number, data in enumerate(row_data):
+                item = QTableWidgetItem(str(data))
+
+                item.setBackground(QColor("lightcyan"))
+                item.setForeground(QColor("black"))  # Set text color to purple
+
+
                 # row_data is a tuple where each element of tuple is a column item
-                self.table3.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+                self.table3.setItem(row_number, column_number, item)
                 # setItem is used to populate the empty row with data
         connection.close()
 
@@ -287,8 +313,14 @@ class MainWindow(QMainWindow):
                     self.table4.insertRow(row_number)
                     # This inserts an empty row in the window
                     for column_number, data in enumerate(row_data):
+                        item = QTableWidgetItem(str(data))
+                        light_green = QColor(200, 255, 200)
+                        item.setBackground(light_green)
+                        item.setForeground(QColor("black"))  # Set text color to purple
+
+                        self.table4.setItem(row_number, column_number, item)
                         # row_data is a tuple where each element of tuple is a column item
-                        self.table4.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
             else:
                 result = [[self.selected_code],["None"]]
 
@@ -298,8 +330,15 @@ class MainWindow(QMainWindow):
                     self.table4.insertRow(row_number)
                     # This inserts an empty row in the window
                     for column_number, data in enumerate(row_data):
+                        item = QTableWidgetItem(str(data))
+                        light_red = QColor(255, 200, 200)
+                        item.setBackground(light_red)
+                        item.setForeground(QColor("black"))  # Set text color to purple
+
                         # row_data is a tuple where each element of tuple is a column item
-                        self.table4.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+                        self.table4.setItem(row_number, column_number, item)
+                        # row_data is a tuple where each element of tuple is a column item
+
 
         except IndexError:
             self.table4.setRowCount(0)
@@ -323,7 +362,8 @@ class MainWindow(QMainWindow):
 
         connection.close()
 
-        label4 = QLabel("Columns in Table 2:")
+        label4 = QLabel("Set number of columns in Table 2:")
+        label4.setStyleSheet("font-weight: bold;")
         label4.setFixedHeight(20)
         layout.addWidget(label4)
 
@@ -433,6 +473,7 @@ class DeleteDialog(QDialog):
             layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
 
             label1 = QLabel(f"Remove {self.selected_code}?")
+            label1.setStyleSheet("font-weight: bold;")
             label1.setFixedHeight(20)
             layout.addWidget(label1)
 
@@ -474,8 +515,7 @@ class ConstraintsDialog(QDialog):
             super().__init__()
 
             self.setWindowTitle("Change Constraints")
-            self.setFixedWidth(300)
-            self.setFixedHeight(300)
+            self.setMinimumSize(300,300)
 
             connection = sqlite3.connect(db_filepath)
             cursor = connection.cursor()
@@ -487,40 +527,56 @@ class ConstraintsDialog(QDialog):
             self.fetched_max_capacity = rows[0][2]
 
             self.sublist_size = rows[0][3] #isme sublist change karna hi nai hai
-            layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
+            layout = QGridLayout()  # places widgets only vertically stacked as opposed to grid #
 
             label1 = QLabel("Days:")
             label1.setFixedHeight(20)
-            layout.addWidget(label1)
+
 
             self.days = QLineEdit(str(self.fetched_days))
             self.days.setPlaceholderText("Days")
-            layout.addWidget(self.days)
+
 
             label2 = QLabel("Slots:")
             label2.setFixedHeight(20)
-            layout.addWidget(label2)
+
 
             self.slots = QLineEdit(str(self.fetched_slots))
             self.slots.setPlaceholderText("Slots")
-            layout.addWidget(self.slots)
+
 
             label3 = QLabel("Max Capacity:")
             label3.setFixedHeight(20)
-            layout.addWidget(label3)
+
 
             self.capacity = QLineEdit(str(self.fetched_max_capacity))
             self.capacity.setPlaceholderText("Max Capacity")
-            layout.addWidget(self.capacity)
+
 
             # update button
             button = QPushButton("Apply")
             button.clicked.connect(self.apply)
-            layout.addWidget(button)
+            button.setFixedHeight(25)
 
             button2 = QPushButton("Cancel")
             button2.clicked.connect(self.close)
-            layout.addWidget(button2)
+            button2.setFixedHeight(25)
+
+            warning_label=QLabel("Warning: If constraints other than max capacity are changed ,\n"
+                                 "the exam schedule will reset to the first draft and ,\n"
+                                 "you will lose your progress.")
+            warning_label.setStyleSheet("background-color: lightyellow; border: 2px solid DarkYellow;")
+
+            """Adding Widgets"""
+            layout.addWidget(label1,1,1)
+            layout.addWidget(self.days,1,2)
+            layout.addWidget(label2,2,1)
+            layout.addWidget(self.slots,2,2)
+            layout.addWidget(label3,3,1)
+            layout.addWidget(self.capacity,3,2)
+            layout.addWidget(button,5,1,2,2)
+            layout.addWidget(button2,7,1,2,2)
+            layout.addWidget(warning_label,9,1,2,2)
 
             self.setLayout(layout)
         except AttributeError: # attribute error for invalid q line edit input
@@ -702,7 +758,8 @@ class ScheduleDialog(QDialog):
 
 
 
-            label = QLabel(self.selected_code)
+            label = QLabel(f"Course : {self.selected_code}")
+            label.setStyleSheet("font-weight: bold;")
             label.setFixedHeight(20)
             layout.addWidget(label)
 
@@ -763,6 +820,7 @@ class ScheduleDialog(QDialog):
             self.dialog_box.table1 = QTableWidget()
             self.dialog_box.table1.setColumnCount(5)
             self.dialog_box.table1.setHorizontalHeaderLabels(("Day","ab","bc","ac","abc"))
+            self.dialog_box.table1.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
             self.dialog_box.table1.verticalHeader().setVisible(False)
             self.dialog_box.table1.setRowCount(0)
 
@@ -780,6 +838,7 @@ class ScheduleDialog(QDialog):
             self.dialog_box.table2 = QTableWidget()
             self.dialog_box.table2.setColumnCount(5)
             self.dialog_box.table2.setHorizontalHeaderLabels(("Day", "ab", "bc", "ac", "abc"))
+            self.dialog_box.table2.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
             self.dialog_box.table2.verticalHeader().setVisible(False)
             self.dialog_box.table2.setRowCount(0)
 
@@ -866,6 +925,7 @@ class ScheduleDialog(QDialog):
             dialog_box.table = QTableWidget()
             dialog_box.table.setColumnCount(2)
             dialog_box.table.setHorizontalHeaderLabels(("Course", "Students"))
+            dialog_box.table.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
             dialog_box.table.verticalHeader().setVisible(False)
             dialog_box.table.setRowCount(0)
 
@@ -946,7 +1006,8 @@ class DescheduleDialog(QDialog):
             courses_string = window.table1.item(index, 1).text()
             layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
 
-            label= QLabel(self.slot)
+            label= QLabel(f"Slot : {self.slot}")
+            label.setStyleSheet("font-weight: bold;")
 
             layout.addWidget(label)
             label.setFixedHeight(20)
@@ -999,6 +1060,7 @@ class DescheduleDialog(QDialog):
             self.dialog_box.table1 = QTableWidget()
             self.dialog_box.table1.setColumnCount(5)
             self.dialog_box.table1.setHorizontalHeaderLabels(("Day", "ab", "bc", "ac", "abc"))
+            self.dialog_box.table1.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
             self.dialog_box.table1.verticalHeader().setVisible(False)
             self.dialog_box.table1.setRowCount(0)
 
@@ -1014,6 +1076,7 @@ class DescheduleDialog(QDialog):
             self.dialog_box.table2 = QTableWidget()
             self.dialog_box.table2.setColumnCount(5)
             self.dialog_box.table2.setHorizontalHeaderLabels(("Day", "ab", "bc", "ac", "abc"))
+            self.dialog_box.table2.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
             self.dialog_box.table2.verticalHeader().setVisible(False)
             self.dialog_box.table2.setRowCount(0)
 
@@ -1099,7 +1162,8 @@ class Alternate1Dialog(QDialog):
             courses_string = window.table1.item(index, 1).text()
             layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
 
-            label= QLabel(self.slot)
+            label= QLabel(f"Slot : {self.slot}")
+            label.setStyleSheet("font-weight: bold;")
 
             layout.addWidget(label)
             label.setFixedHeight(20)
@@ -1151,8 +1215,13 @@ class Alternate1Dialog(QDialog):
                     window.table4.insertRow(row_number)
                     # This inserts an empty row in the window
                     for column_number, data in enumerate(row_data):
-                        # row_data is a tuple where each element of tuple is a column item
-                        window.table4.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+                        item = QTableWidgetItem(str(data))
+                        light_green = QColor(200, 255, 200)
+                        item.setBackground(light_green)
+                        item.setForeground(QColor("black"))  # Set text color to purple
+
+                        window.table4.setItem(row_number, column_number, item)
+
             else:
                 result = [[self.course], ["None"]]
 
@@ -1162,8 +1231,14 @@ class Alternate1Dialog(QDialog):
                     window.table4.insertRow(row_number)
                     # This inserts an empty row in the window
                     for column_number, data in enumerate(row_data):
+                        item = QTableWidgetItem(str(data))
+                        light_red = QColor(255, 200, 200)
+                        item.setBackground(light_red)
+                        item.setForeground(QColor("black"))  # Set text color to purple
+
                         # row_data is a tuple where each element of tuple is a column item
-                        window.table4.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+                        window.table4.setItem(row_number, column_number, item)
+
 
         except IndexError:
             window.table4.setRowCount(0)
