@@ -41,10 +41,6 @@ class MainWindow(QMainWindow):
         sublist_size = row[0]
 
 
-
-
-
-
         settings_menu_item = self.menuBar().addMenu("&Settings")
         database_menu_item = self.menuBar().addMenu("&Database")
         about_menu_item = self.menuBar().addMenu("&About")
@@ -594,11 +590,13 @@ class DatabaseDialog(QDialog):
 
         # update button
         button1 = QPushButton("Restore First Draft")
-        button2 = QPushButton("Constraints Changed")
-        button3 = QPushButton("Input Changed")
+        button2 = QPushButton("Input Changed/Setup")
+        button3 = QPushButton("Clean Wipe")
+
         button1.clicked.connect(self.restore)
-        button2.clicked.connect(self.constraints_changed)
-        button3.clicked.connect(self.input_changed)
+        button2.clicked.connect(self.input_changed)
+        button3.clicked.connect(self.clean_wipe)
+
         layout.addWidget(button1)
         layout.addWidget(button2)
         layout.addWidget(button3)
@@ -623,17 +621,7 @@ class DatabaseDialog(QDialog):
         window.load_not_scheduled()
         window.load_exam_schedule()
         self.message_box()
-    def constraints_changed(self):
-        # below vale used when constraints changed
-        clear_exam_schedule_table(db_filepath=db_filepath)  # clean wipe
-        initialize_exam_schedule_table(db_filepath=db_filepath)  # initialization ( [] , [] )
-        content = initialize_scheduling(db_filepath=db_filepath)
-        first_draft(db_filepath=db_filepath,content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
-        update_analysis(db_filepath=db_filepath)
-        window.load_analysis()
-        window.load_not_scheduled()
-        window.load_exam_schedule()
-        self.message_box()
+
     def input_changed(self):
         # below vale used when spreadsheet ( input ) changed
         clear_exam_scheduling_data(db_filepath)
@@ -641,9 +629,42 @@ class DatabaseDialog(QDialog):
         clear_course_slot_db(db_filepath)  # course_data and slot_data table emptied
         csv_to_db(csv_filepath, db_filepath)  # for spreadsheet csv to student enrollment table fill
         populate_course_table(db_filepath)  # student enrollment data se course_data table fill hoga then usse slot data filled
+        initialize_exam_schedule_table(db_filepath)
         content = initialize_scheduling(db_filepath=db_filepath)
         first_draft(db_filepath=db_filepath,content=content)  # first draft filled in exam_schedule table (used along with initialize scheduling)
         update_analysis(db_filepath=db_filepath)
+        window.load_analysis()
+        window.load_not_scheduled()
+        window.load_exam_schedule()
+        self.message_box()
+    def clean_wipe(self):
+        connection = sqlite3.connect(db_filepath)
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM analysis")
+        cursor.execute("DELETE FROM constraints")
+
+        new_row = [(5, 3, 700, 5)]
+        cursor.executemany("INSERT INTO constraints VALUES(?,?,?,?)", new_row)
+
+        cursor.execute("DELETE FROM course_data")
+        cursor.execute("DELETE FROM exam_schedule")
+        cursor.execute("DELETE FROM not_scheduled")
+        cursor.execute("DELETE FROM slot_data")
+
+        new_rows = []
+        alphabets = "ABCDEFGHIJKLM"
+        for alphabet in alphabets:
+            new_rows.append((f"{alphabet}1", "[]"))
+            new_rows.append((f"{alphabet}2", "[]"))
+            new_rows.append((f"{alphabet}3", "[]"))
+        new_rows.append((f"BLANK", "[]"))
+        cursor.executemany("INSERT INTO slot_data VALUES(?,?)", new_rows)
+
+        cursor.execute("DELETE FROM student_enrollment_data")
+
+
+        connection.commit()
+        connection.close()
         window.load_analysis()
         window.load_not_scheduled()
         window.load_exam_schedule()

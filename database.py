@@ -141,6 +141,8 @@ def initialize_exam_schedule_table(db_filepath):
     connection.commit()
     connection.close()
 
+
+
 if __name__ == "__main__":
     # csv_to_db(csv_filepath,db_filepath) # for spreadsheet csv to student enrollment table fill
 
@@ -148,5 +150,6 @@ if __name__ == "__main__":
 
     #populate_course_table(db_filepath) # student enrollment data se course_data table fill hoga then usse slot data filled
 
-    clear_exam_schedule_table(db_filepath=db_filepath) # clean wipe
-    initialize_exam_schedule_table(db_filepath=db_filepath) # initialization ( [] , [] )
+    #clear_exam_schedule_table(db_filepath=db_filepath) # clean wipe
+    #initialize_exam_schedule_table(db_filepath=db_filepath) # initialization ( [] , [] )
+    pass
