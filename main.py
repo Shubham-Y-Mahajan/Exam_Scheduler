@@ -10,12 +10,12 @@ import sys
 from backend import schedule_course,deschedule_course,update_analysis,current_analysis,possible_slots
 
 from database import clear_exam_schedule_table,clear_course_slot_db,initialize_exam_schedule_table\
-    ,populate_course_table,csv_to_db ,clear_student_enrollment_data
+    ,populate_course_table,csv_to_db ,clear_student_enrollment_data,extract_not_scheduled
 from initialization_backend import clear_exam_scheduling_data,first_draft,initialize_scheduling
-
+import os
 
 db_filepath="Data.db"
-csv_filepath="acad_office_data.csv" # ye spreadsheet se qutomatically create karne ka try karo
+csv_filepath="input.csv"
 class DatabaseConnection():
     def __init__(self, database=db_filepath):
         self.db = database
@@ -638,8 +638,7 @@ class DatabaseDialog(QDialog):
         super().__init__()
 
         self.setWindowTitle("Database Controls")
-        self.setFixedWidth(500)
-        self.setFixedHeight(500)
+        self.setMinimumSize(500,500)
 
         layout = QVBoxLayout()  # places widgets only vertically stacked as opposed to grid #
 
@@ -648,6 +647,14 @@ class DatabaseDialog(QDialog):
         button1 = QPushButton("Restore First Draft")
         button2 = QPushButton("Input Changed/Setup")
         button3 = QPushButton("Clean Wipe")
+        note_label = QLabel("Note:\n\n"
+                            "1)Clean Wipe will clear the entire database\n\n"
+                            "2)After Clean Wipe is used you must use Input Changed/Setup \n"
+                            "  to get data into database.\n\n"
+                            "3)Restore First Draft will recreate the first draft of exam time table using special algorithm\n"
+                            "  this option only works when data is present in database. ")
+        note_label.setFixedHeight(200)
+        note_label.setStyleSheet("background-color: lightyellow; border: 2px solid DarkYellow;")
 
         button1.clicked.connect(self.restore)
         button2.clicked.connect(self.input_changed)
@@ -656,6 +663,7 @@ class DatabaseDialog(QDialog):
         layout.addWidget(button1)
         layout.addWidget(button2)
         layout.addWidget(button3)
+        layout.addWidget(note_label)
 
         self.setLayout(layout)
     def message_box(self):
@@ -724,6 +732,7 @@ class DatabaseDialog(QDialog):
         window.load_analysis()
         window.load_not_scheduled()
         window.load_exam_schedule()
+        window.table4.setRowCount(0)
         self.message_box()
 class ScheduleDialog(QDialog):
     def __init__(self):
@@ -1257,25 +1266,16 @@ class AboutDialog(QMessageBox):
         # self itself is the Mesage box instance
 
 
-"""  --  --   -- Common function definitions  --   --  --  """
-def extract_not_scheduled(db_filepath):
-    connection = sqlite3.connect(db_filepath)
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT course_code FROM not_scheduled")
-    rows = cursor.fetchall()
-    not_scheduled_course_list = []
-    for tple in rows:
-        not_scheduled_course_list.append(tple[0])
-    connection.close()
-    return not_scheduled_course_list
 
 
 
-app = QApplication(sys.argv)
-window = MainWindow()
-window.show()
-window.load_exam_schedule()
-window.load_not_scheduled()
-window.load_analysis()
-sys.exit(app.exec())
+if os.path.exists("Data.db") and os.path.exists("input.csv"):
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    window.load_exam_schedule()
+    window.load_not_scheduled()
+    window.load_analysis()
+    sys.exit(app.exec())
+else:
+    print("Required Files (input.csv and Data.db) NOT PRESENT")

@@ -2,7 +2,7 @@ import csv
 import sqlite3
 import json
 from initialization_backend import slot_regex
-csv_filepath="acad_office_data.csv"
+csv_filepath="input.csv"
 db_filepath="Data.db"
 def csv_to_db(csv_filepath,db_filepath):
     data=[]
@@ -142,7 +142,17 @@ def initialize_exam_schedule_table(db_filepath):
     connection.close()
 
 
+def extract_not_scheduled(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
 
+    cursor.execute("SELECT course_code FROM not_scheduled")
+    rows = cursor.fetchall()
+    not_scheduled_course_list = []
+    for tple in rows:
+        not_scheduled_course_list.append(tple[0])
+    connection.close()
+    return not_scheduled_course_list
 if __name__ == "__main__":
     # csv_to_db(csv_filepath,db_filepath) # for spreadsheet csv to student enrollment table fill
 
