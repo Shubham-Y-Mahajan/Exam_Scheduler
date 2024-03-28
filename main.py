@@ -47,11 +47,11 @@ class MainWindow(QMainWindow):
         help_menu_item = self.menuBar().addMenu("&Help")
 
 
-        control_database_action = QAction( "[Control]", self)
+        control_database_action = QAction( "Control", self)
         control_database_action.triggered.connect(self.database)
         database_menu_item.addAction(control_database_action)
 
-        constraints_change_action = QAction( "[Change Constraints]", self)
+        constraints_change_action = QAction( "Change Constraints", self)
         constraints_change_action.triggered.connect(self.constraints)
         settings_menu_item.addAction(constraints_change_action)
 
@@ -61,11 +61,11 @@ class MainWindow(QMainWindow):
 
         setup_action = QAction("Setup", self)
         help_menu_item.addAction(setup_action)
-        setup_action.triggered.connect(self.about)
+        setup_action.triggered.connect(self.setup)
+        window_action = QAction("Tables of Main Window", self)
+        help_menu_item.addAction(window_action)
+        window_action.triggered.connect(self.help_window)
 
-        functionality_action = QAction("Functionality", self)
-        help_menu_item.addAction(functionality_action)
-        functionality_action.triggered.connect(self.about)
 
 
         """IF THE HELP ITEM DIDNT SHOW 
@@ -443,6 +443,14 @@ class MainWindow(QMainWindow):
 
     def about(self):
         dialog = AboutDialog()
+        dialog.exec()
+
+    def setup(self):
+        dialog = SetupDialog()
+        dialog.exec()
+
+    def help_window(self):
+        dialog = HelpWindowDialog()
         dialog.exec()
 
 class DeleteDialog(QDialog):
@@ -1258,13 +1266,71 @@ class AboutDialog(QMessageBox):
         super().__init__()
         self.setWindowTitle("About")
 
-        content = """
-        This app was created during the "Python Mega Course"  
-        skibibopopop"""
+        content = "This Software was created to aid Office of Academic Affairs in scheduling the university exams of IIT Bhilai.\n\n" \
+                  "'University_Exam_Scheduler' was developed by Shubham Yogesh Mahajan(12241730) of BTech CSE - IIT Bhilai.\n\n" \
+                  "In case of any query you can reach out to the developer-\n" \
+                  "Email:shubhamy@iitbhilai.ac.in\n" \
+                  "Alternate Email:mahajanshubham54321@gmail.com\n" \
+                  "Phone:+918879466601"
 
         self.setText(content)
         # self itself is the Mesage box instance
 
+class SetupDialog(QMessageBox):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Setup Instructions")
+
+        content = "# Setup \n" \
+                  "The application folder will contain 2 files by default which should not be modified by the user -\n" \
+                  "1)Exam_Scheduler (executable)\n" \
+                  "2)Data.db (database file)\n\n" \
+                  "The input of student data (input.csv) will be given by the intended user\n" \
+                  "The excel file of data must have the following format:\n" \
+                  "Roll Number;Course_Code;Slot;Instructor\n\n" \
+                  "Note: The excel file Pawan Sir had sent to Shubham was of the correct and required format.\n" \
+                  "Now make the following changes to the excel file:\n\n" \
+                  "1) remove the words TUT and LAB and any () or - around them\n" \
+                  "Note: slots of each course should be defined in the following way -\n " \
+                  "[Alphabet] or [AlphabetNumber] or [AlphabetNumber,Number] or [[AlphabetNumber],[AlphabetNumber]]\n" \
+                  "Example of possible slots = A ; A12 ; A12,B13,C2\n" \
+                  "2) Save the excel file as UTF-8 comma delimited file in the application directory ,with the filename as 'input'\n" \
+                  "3) run the executable by simply double clicking it.\n" \
+                  "4) Go to Database>Control>click Input Changed/Setup\n" \
+                  "5) The Setup is complete\n"
+
+        self.setText(content)
+
+class HelpWindowDialog(QMessageBox):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Elements of Main Window")
+
+        content = "The Main Window Consists of 4 Tables:\n\n" \
+                  "1) Table 1 = Exam Schedule Table\n" \
+                  "The table with headings 'slot','courses','total_students'\n" \
+                  "This table contains the exam schedule\n" \
+                  "A row like = 31 ; CS554 ; 127\n" \
+                  "Would imply that CS554 will be conducted in the 3rd day's 1st slot and,\n" \
+                  "The total number of students giving exam on 3rd day's 1st slot = 127\n\n" \
+                  "2) Table 2 = Not Scheduled Table\n" \
+                  "The table with numerical numbers as the headings\n" \
+                  "This table contains all the courses which have not been scheduled for examination yet.\n\n" \
+                  "3) Table 3 = Analysis Table\n" \
+                  "The table with headings = 'Day','ab','bc','ac','abc'\n" \
+                  "A row like = 2 ; 34 ; 27 ; 45 ; 19\n" \
+                  "Would imply that on 2nd day,\n" \
+                  "34 students are giving exam in the 1st and 2nd slot (ab) of the day\n" \
+                  "27 students are giving exam in the 2nd and 3rd slot (bc) of the day\n" \
+                  "45 students are giving exam in the 1st and 3rd slot (ac) of the day\n" \
+                  "19 students are giving exam in the 1st 2nd and 3rd slot (abc) of the day\n\n" \
+                  "4)Table 4 = Scheduling Possibilities Table\n" \
+                  "When a course in table 2 is clicked then the scheduling possibilities of that course \n" \
+                  "will be display in the table.\n" \
+                  "If 23 is displayed in table 4 when course CS252 is clicked \n" \
+                  "Then it implies that CS252 can be scheduled in the 2nd day's 3rd slot\n\n"
+
+        self.setText(content)
 
 
 
