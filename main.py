@@ -834,6 +834,7 @@ class ScheduleDialog(QDialog):
             self.dialog_box.setMinimumSize(550,400)
             layout = QVBoxLayout()
 
+
             self.dialog_box.table1 = QTableWidget()
             self.dialog_box.table1.setColumnCount(5)
             self.dialog_box.table1.setHorizontalHeaderLabels(("Day","ab","bc","ac","abc"))
@@ -867,12 +868,16 @@ class ScheduleDialog(QDialog):
                 for column_number, data in enumerate(row_data):
                     self.dialog_box.table2.setItem(row_number, column_number, QTableWidgetItem(str(data)))
 
-
-
+            note_label = QLabel("Note:\n\n"
+                                "1)The first table shows the current analysis\n"
+                                f"2)The second table shows the analysis which would occur if {self.course} is scheduled in {self.exam_slot} slot")
+            note_label.setFixedHeight(100)
+            note_label.setStyleSheet("background-color: lightyellow; border: 2px solid DarkYellow;")
 
 
             layout.addWidget(self.dialog_box.table1)
             layout.addWidget(self.dialog_box.table2)
+            layout.addWidget(note_label)
 
             button1 = QPushButton("Apply")
             button1.clicked.connect(self.apply)  # Fix: Connect to the close method without parentheses
@@ -1105,8 +1110,15 @@ class DescheduleDialog(QDialog):
                 for column_number, data in enumerate(row_data):
                     self.dialog_box.table2.setItem(row_number, column_number, QTableWidgetItem(str(data)))
 
+            note_label = QLabel("Note:\n\n"
+                                "1)The first table shows the current analysis\n"
+                                f"2)The second table shows the analysis which would occur if {self.course} is descheduled from {self.exam_slot} slot")
+            note_label.setFixedHeight(100)
+            note_label.setStyleSheet("background-color: lightyellow; border: 2px solid DarkYellow;")
+
             layout.addWidget(self.dialog_box.table1)
             layout.addWidget(self.dialog_box.table2)
+            layout.addWidget(note_label)
 
             button1 = QPushButton("Apply")
             button1.clicked.connect(self.apply)  # Fix: Connect to the close method without parentheses
