@@ -92,11 +92,16 @@ class MainWindow(QMainWindow):
 
 
         self.table2 = QTableWidget()
-
         self.table2.setColumnCount(sublist_size)
         self.table2.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
         self.table2.verticalHeader().setVisible(False)
 
+        self.table5 = QTableWidget()
+        self.table5.setColumnCount(1)
+        self.table5.setHorizontalHeaderLabels(("NA",))
+        self.table5.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
+        self.table5.verticalHeader().setVisible(False)
+        self.table5.setFixedWidth(120)
 
         """ analysis table"""
         self.table3 = QTableWidget()
@@ -112,6 +117,7 @@ class MainWindow(QMainWindow):
 
         self.table4 = QTableWidget()
         self.table4.setColumnCount(1)
+
         self.table4.setHorizontalHeaderLabels(("Possibility",))
         self.table4.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
         self.table4.setFixedWidth(120)
@@ -121,10 +127,12 @@ class MainWindow(QMainWindow):
 
         """"""""""2 rows 8 column idea , row column rowspan colspan"""""""""
         layout = QGridLayout(central_widget)
-        layout.addWidget(self.table1,1,1,1,8)
+        layout.addWidget(self.table1,1,1,1,9)
+        layout.addWidget(self.table4, 2, 1, 1, 1)
         layout.addWidget(self.table2,2,2,1,4)
-        layout.addWidget(self.table4,2,1,1,1)
-        layout.addWidget(self.table3,2,6,1,3)
+        layout.addWidget(self.table5, 2, 6, 1, 1)
+        layout.addWidget(self.table3,2,7,1,3)
+
 
 
         # create a toolbar and add toolbar elements
@@ -180,15 +188,15 @@ class MainWindow(QMainWindow):
         connection = DatabaseConnection().connection()
         cursor = connection.cursor()
 
-        cursor.execute("SELECT course_code FROM not_scheduled")
+        """Table 2 ( NON NA courses ) """
+        cursor.execute("SELECT course_code FROM not_scheduled where NA_flag = 0")
         rows = cursor.fetchall()
         not_scheduled_course_list = []
         for tple in rows:
             not_scheduled_course_list.append(tple[0])
 
         not_scheduled_course_list.reverse()
-        connection = DatabaseConnection().connection()
-        cursor = connection.cursor()
+
         cursor.execute("SELECT sublist_size FROM constraints")
         row = cursor.fetchone()
         sublist_size = row[0]
@@ -211,6 +219,32 @@ class MainWindow(QMainWindow):
                 self.table2.setItem(row_number, column_number, item)
 
                 # setItem is used to populate the empty row with data
+
+
+        """ Table 5 ( NA courses )"""
+        cursor.execute("SELECT course_code FROM not_scheduled where NA_flag = 1")
+        rows = cursor.fetchall()
+        not_scheduled_course_list = []
+        for tple in rows:
+            not_scheduled_course_list.append(tple[0])
+
+        not_scheduled_course_list.reverse()
+
+        result = [not_scheduled_course_list[i:i + 1] for i in
+                  range(0, len(not_scheduled_course_list), 1)]
+
+        self.table5.setRowCount(0)
+        # This command resets the table , thus whenever u run the program you wont get duplicate data
+        for row_number, row_data in enumerate(result):
+            self.table5.insertRow(row_number)
+            # This inserts an empty row in the window
+            for column_number, data in enumerate(row_data):
+                item = QTableWidgetItem(str(data))
+                item.setBackground(QColor("lightgrey"))
+                item.setForeground(QColor("black"))  # Set text color to purple
+
+                self.table5.setItem(row_number, column_number, item)
+
         connection.close()
 
     def load_analysis(self):
@@ -730,6 +764,7 @@ class DatabaseDialog(QDialog):
             new_rows.append((f"{alphabet}2", "[]"))
             new_rows.append((f"{alphabet}3", "[]"))
         new_rows.append((f"BLANK", "[]"))
+        new_rows.append((f"NA", "[]"))
         cursor.executemany("INSERT INTO slot_data VALUES(?,?)", new_rows)
 
         cursor.execute("DELETE FROM student_enrollment_data")

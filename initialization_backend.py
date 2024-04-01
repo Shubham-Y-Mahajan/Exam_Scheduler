@@ -68,8 +68,7 @@ def slot_regex(course_code,slot):
                         add.append(f"{alphabet}3")
 
                     case _:  # NON DEFINED SLOTS
-                        print(f"unable to process slot - {slot} ")
-                        return 0
+                        add.append(f"NA")
 
 
             else:
@@ -87,18 +86,21 @@ def slot_regex(course_code,slot):
 def initialize_scheduling(db_filepath):
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
+
     cursor.execute("SELECT course_code FROM course_data")
     rows = cursor.fetchall()
-
     courses= [item[0] for item in rows]
+
     cursor.execute("SELECT slot FROM exam_schedule")
     rows = cursor.fetchall()
-
     exam_slots = [item[0] for item in rows]
+
     cursor.execute("SELECT slot FROM slot_data")
     rows = cursor.fetchall()
-
     course_slots = [item[0] for item in rows]
+    course_slots.pop()# to remove NA
+    print(course_slots)
+
     connection.close()
     return ([courses,exam_slots,course_slots])
 
@@ -178,9 +180,29 @@ def first_draft(db_filepath,content): # for first draft of the exams
                                        f"WHERE slot = ?", (serialized_exam_courses, serialized_exam_students ,
                                                            load,exam_slot))
 
+    """NA courses being loaded with not scheduled table with flag"""
+    cursor.execute(f"SELECT courses FROM slot_data WHERE slot = 'NA' ")
+    row = cursor.fetchone()
+    if row:
+        NA_courses = json.loads(row[0])
+    else:
+        return -3  # slot dne in Time Table
+
+    for course in NA_courses:
+        cursor.execute(f"SELECT registered_students FROM course_data WHERE course_code = '{course}'")
+        row = cursor.fetchone()
+        if row:
+            students = json.loads(row[0])
+        else:
+            return -1  # course dne in table
+        serialized_students = json.dumps(students)
+
+        new_row = [(course, serialized_students, 1)]
+        cursor.executemany("INSERT INTO not_scheduled VALUES(?,?,?)", new_row)
+        not_scheduled.remove(course)
 
 
-    for course in not_scheduled:
+    for course in not_scheduled: # will not include any NA course
         cursor.execute(f"SELECT registered_students FROM course_data WHERE course_code = '{course}'")
         row = cursor.fetchone()
         if row:
@@ -189,8 +211,9 @@ def first_draft(db_filepath,content): # for first draft of the exams
             return -1 # course dne in table
         serialized_students = json.dumps(students)
 
-        new_row=[(course,serialized_students)]
-        cursor.executemany("INSERT INTO not_scheduled VALUES(?,?)", new_row)
+
+        new_row=[(course,serialized_students,0)]
+        cursor.executemany("INSERT INTO not_scheduled VALUES(?,?,?)", new_row)
 
     connection.commit()
     connection.close()
@@ -208,6 +231,6 @@ def clear_exam_scheduling_data(db_filepath):
     return 1
 
 if __name__ == "__main__":
-    clear_exam_scheduling_data(db_filepath) # exam _schedule table empty but initialized ( [], [])
+    #clear_exam_scheduling_data(db_filepath) # exam _schedule table empty but initialized ( [], [])
     content=initialize_scheduling(db_filepath=db_filepath)
-    first_draft(db_filepath=db_filepath,content=content) # first draft filled in exam_schedule table (used along with initialize scheduling)
+    #first_draft(db_filepath=db_filepath,content=content) # first draft filled in exam_schedule table (used along with initialize scheduling)
