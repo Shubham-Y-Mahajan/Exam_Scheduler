@@ -51,8 +51,8 @@ def deschedule_course(db_filepath,exam_slot,course):
                                            total_exam_students, exam_slot))
 
         serialized_course_students = json.dumps(course_students)
-        new_row = [(course, serialized_course_students)]
-        cursor.executemany("INSERT INTO not_scheduled VALUES(?,?)", new_row)
+        new_row = [(course, serialized_course_students, 0)]
+        cursor.executemany("INSERT INTO not_scheduled VALUES(?,?,?)", new_row)
 
         connection.commit()
         connection.close()
@@ -277,4 +277,4 @@ if __name__ == "__main__":
     #value=schedule_course(db_filepath=db_filepath,exam_slot="32",course="CYP502")
     #print(value)
     #update_analysis(db_filepath)
-    print(possible_slots(db_filepath,"CS252"))
+    pass

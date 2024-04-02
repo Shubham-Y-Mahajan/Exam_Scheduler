@@ -145,7 +145,6 @@ def initialize_exam_schedule_table(db_filepath):
 def extract_not_scheduled(db_filepath):
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
-
     cursor.execute("SELECT course_code FROM not_scheduled")
     rows = cursor.fetchall()
     not_scheduled_course_list = []

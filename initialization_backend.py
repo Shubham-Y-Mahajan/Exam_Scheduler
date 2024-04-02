@@ -99,7 +99,7 @@ def initialize_scheduling(db_filepath):
     rows = cursor.fetchall()
     course_slots = [item[0] for item in rows]
     course_slots.pop()# to remove NA
-    print(course_slots)
+
 
     connection.close()
     return ([courses,exam_slots,course_slots])
@@ -109,6 +109,9 @@ def first_draft(db_filepath,content): # for first draft of the exams
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
 
+    cursor.execute(f"SELECT capacity from constraints")
+    row=cursor.fetchone()
+    max_capacity=row[0]
     scheduled=[]
     not_scheduled=content[0]
     exam_slots=content[1]
@@ -154,7 +157,7 @@ def first_draft(db_filepath,content): # for first draft of the exams
 
                     load = capacity_filled + number_of_students
 
-                    if not common_elements and load <= 700:
+                    if not common_elements and load <= max_capacity:
                         cursor.execute(f"SELECT courses FROM exam_schedule WHERE slot = '{exam_slot}'")
                         row = cursor.fetchone()
                         if row:
