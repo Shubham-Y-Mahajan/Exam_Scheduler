@@ -121,28 +121,44 @@ class MainWindow(QMainWindow):
         self.table4.setHorizontalHeaderLabels(("Possibility",))
         self.table4.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: lightgray; color: black; font-weight: bold }")
         self.table4.setFixedWidth(120)
+
         self.table4.verticalHeader().setVisible(False)
 
+        swap_slot_button = QPushButton("Swap Slots")
+        swap_slot_button.clicked.connect(self.deschedule)
+
+        swap_day_button = QPushButton("Swap Days")
+        swap_day_button.clicked.connect(self.deschedule)
 
 
-        """"""""""2 rows 8 column idea , row column rowspan colspan"""""""""
+        """"""""""2 rows 9 column idea , row column rowspan colspan"""""""""
+
+        """self.table1.setFixedHeight(480)
+        self.table2.setFixedHeight(400)
+        self.table3.setFixedHeight(400)
+        self.table4.setFixedHeight(400)
+        self.table5.setFixedHeight(400)"""
+
         layout = QGridLayout(central_widget)
         layout.addWidget(self.table1,1,1,1,9)
         layout.addWidget(self.table4, 2, 1, 1, 1)
         layout.addWidget(self.table2,2,2,1,4)
         layout.addWidget(self.table5, 2, 6, 1, 1)
         layout.addWidget(self.table3,2,7,1,3)
+        layout.addWidget(swap_slot_button,3,7,1,1)
+        layout.addWidget(swap_day_button,3,8,1,1)
+        #hh
 
 
 
         # create a toolbar and add toolbar elements
         # By default in toolbar icons are used if QIcons elemnt is present
-        toolbar = QToolBar()
+        """toolbar = QToolBar()
         toolbar.setMovable(True)
         self.addToolBar(toolbar)
 
-        """toolbar.addAction(control_database_action)
-        toolbar.addAction(constraints_change_action)"""
+        toolbar.addWidget(swap_day_button)
+        toolbar.addWidget(swap_slot_button)"""
 
         # Create stautus bar
 
@@ -533,7 +549,7 @@ class ConstraintsDialog(QDialog):
             cursor.execute("SELECT * FROM constraints")
             rows = cursor.fetchall()
             self.fetched_days = rows[0][0]
-            self.fetched_slots = rows[0][1]
+            self.fetched_slots = rows[0][1] #isme slots change karna hi nai hai
             self.fetched_max_capacity = rows[0][2]
 
             self.sublist_size = rows[0][3] #isme sublist change karna hi nai hai
@@ -545,14 +561,6 @@ class ConstraintsDialog(QDialog):
 
             self.days = QLineEdit(str(self.fetched_days))
             self.days.setPlaceholderText("Days")
-
-
-            label2 = QLabel("Slots:")
-            label2.setFixedHeight(20)
-
-
-            self.slots = QLineEdit(str(self.fetched_slots))
-            self.slots.setPlaceholderText("Slots")
 
 
             label3 = QLabel("Max Capacity:")
@@ -580,8 +588,6 @@ class ConstraintsDialog(QDialog):
             """Adding Widgets"""
             layout.addWidget(label1,1,1)
             layout.addWidget(self.days,1,2)
-            layout.addWidget(label2,2,1)
-            layout.addWidget(self.slots,2,2)
             layout.addWidget(label3,3,1)
             layout.addWidget(self.capacity,3,2)
             layout.addWidget(button,5,1,2,2)
@@ -598,10 +604,10 @@ class ConstraintsDialog(QDialog):
         try:
             self.close()
             days=int(self.days.text())
-            slots=int(self.slots.text())
+            slots=int(self.fetched_slots) # not changing
             max_capacity=int(self.capacity.text())
-            t2c=int(self.sublist_size)
-            if days >0 and slots > 0 and max_capacity > 0 and t2c >0 :
+            t2c=int(self.sublist_size) # not changing
+            if days >0 and max_capacity > 0 and t2c >0 :
                 connection = sqlite3.connect(db_filepath)
                 cursor = connection.cursor()
 
@@ -613,7 +619,7 @@ class ConstraintsDialog(QDialog):
                 connection.close()
 
                 """ Changed constraints database """
-                if self.fetched_days != days or self.fetched_slots != slots or self.fetched_max_capacity != max_capacity:
+                if self.fetched_days != days or self.fetched_max_capacity != max_capacity:
                     clear_exam_schedule_table(db_filepath=db_filepath)  # clean wipe
                     initialize_exam_schedule_table(db_filepath=db_filepath)  # initialization ( [] , [] )
                     content = initialize_scheduling(db_filepath=db_filepath)
