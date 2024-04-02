@@ -248,6 +248,13 @@ def balancer(db_filepath):
             return 1
 
 
+def day_swap(db_filepath,dayA,dayB):
+
+    for i in range(1,4):
+        swap_slot_content(db_filepath=db_filepath,slot1=f"{dayA}{i}",slot2=f"{dayB}{i}")
+
+    update_analysis(db_filepath=db_filepath)
+    return 1
 
 
 
@@ -365,4 +372,5 @@ if __name__ == "__main__":
     #update_analysis(db_filepath)
     #swap_slot_content(db_filepath,11,53)
     #update_analysis(db_filepath)
-    balancer(db_filepath)
+    #balancer(db_filepath)
+    day_swap(db_filepath=db_filepath,dayA=1,dayB=4)
