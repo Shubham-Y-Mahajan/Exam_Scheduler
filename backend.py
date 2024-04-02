@@ -165,6 +165,92 @@ def schedule_course(db_filepath,exam_slot,course):
     return 1 # success
 
 
+def swap_slot_content(db_filepath,slot1,slot2):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT courses,students,total_students FROM exam_schedule WHERE slot = '{slot1}'")
+    row1 = cursor.fetchone()
+    cursor.execute(f"SELECT courses,students,total_students FROM exam_schedule WHERE slot = '{slot2}'")
+    row2 = cursor.fetchone()
+    cursor.execute(f"UPDATE exam_schedule SET courses = ? , students = ? , total_students = ? WHERE slot = {slot1}", row2)
+    cursor.execute(f"UPDATE exam_schedule SET courses = ? , students = ? , total_students = ? WHERE slot = {slot2}",row1)
+
+    connection.commit()
+    connection.close()
+
+def balancer_swapper(slot1 , slot2 , cursor):
+    """ Same as swap slot content but special modifications done for use in balancer function"""
+
+    cursor.execute(f"SELECT courses,students,total_students FROM exam_schedule WHERE slot = '{slot1}'")
+    row1 = cursor.fetchone()
+    cursor.execute(f"SELECT courses,students,total_students FROM exam_schedule WHERE slot = '{slot2}'")
+    row2 = cursor.fetchone()
+    cursor.execute(f"UPDATE exam_schedule SET courses = ? , students = ? , total_students = ? WHERE slot = {slot1}",
+                   row2)
+    cursor.execute(f"UPDATE exam_schedule SET courses = ? , students = ? , total_students = ? WHERE slot = {slot2}",
+                   row1)
+
+
+def balancer(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT slot FROM exam_schedule ")
+    rows = cursor.fetchall()
+    exam_slots=[row[0] for row in rows]
+
+
+
+    while True:
+        swap_flag = 0
+
+        cursor.execute(f"SELECT abc from analysis")
+        rows = cursor.fetchall()
+        abc = [len(json.loads(row[0])) for row in rows]
+        initial_abc = sum(abc)
+
+        for slot1 in exam_slots:
+            best_swap = None
+            min_abc = initial_abc
+
+            for slot2 in exam_slots:
+                balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
+                connection.commit()
+                update_analysis(db_filepath=db_filepath)
+
+                cursor.execute(f"SELECT abc from analysis")
+                rows=cursor.fetchall()
+                abc=[len(json.loads(row[0])) for row in rows]
+                total_abc=sum(abc)
+
+                if total_abc < min_abc:
+                    min_abc=total_abc
+                    best_swap=slot2
+                    balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
+                    connection.commit()
+                    update_analysis(db_filepath=db_filepath)
+
+                else: # undo
+                    balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
+                    connection.commit()
+                    update_analysis(db_filepath=db_filepath)
+
+            """applying best swap"""
+            if best_swap:
+                balancer_swapper(slot1=slot1, slot2=best_swap, cursor=cursor)
+                connection.commit()
+                update_analysis(db_filepath=db_filepath)
+                swap_flag=1
+
+
+        print("wait")
+        if swap_flag==0:
+            connection.close()
+            return 1
+
+
+
+
+
 def possible_slots(db_filepath,course):
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
@@ -277,4 +363,6 @@ if __name__ == "__main__":
     #value=schedule_course(db_filepath=db_filepath,exam_slot="32",course="CYP502")
     #print(value)
     #update_analysis(db_filepath)
-    pass
+    #swap_slot_content(db_filepath,11,53)
+    #update_analysis(db_filepath)
+    balancer(db_filepath)
