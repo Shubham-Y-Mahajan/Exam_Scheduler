@@ -2,6 +2,8 @@ from initialization_backend import first_draft, clear_exam_scheduling_data ,slot
 import re
 import json
 import sqlite3
+import xlsxwriter
+import datetime
 db_filepath="Data.db"
 
 def deschedule_course(db_filepath,exam_slot,course):
@@ -362,6 +364,100 @@ def current_analysis(db_filepath):
     return result
 
 
+
+def detailed_analysis(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT day,abc FROM analysis ")
+    rows = cursor.fetchall()
+
+    day_abc={row[0]:json.loads(row[1]) for row in rows}
+
+
+    cursor.execute(f"SELECT days FROM constraints")
+    row=cursor.fetchone()
+    days=row[0]
+
+    detailed_set=[]
+
+    for i in range(1,days+1):
+        day_set=[]
+        cursor.execute(f"SELECT courses from exam_schedule WHERE slot = '{i}1'")
+        row1 = cursor.fetchone()
+
+        cursor.execute(f"SELECT courses from exam_schedule WHERE slot = '{i}2'")
+        row2 = cursor.fetchone()
+
+        cursor.execute(f"SELECT courses from exam_schedule WHERE slot = '{i}3'")
+
+        row3 = cursor.fetchone()
+
+        exam_day_courses = []
+        for course in json.loads(row1[0]):
+            exam_day_courses.append(course)
+        for course in json.loads(row2[0]):
+            exam_day_courses.append(course)
+        for course in json.loads(row3[0]):
+            exam_day_courses.append(course)
+
+
+        for student in day_abc[i]:
+            student_set=[]
+            student_set.append(student)
+            cursor.execute(f"SELECT course_code FROM student_enrollment_data WHERE id='{student}'")
+            rows=cursor.fetchall()
+            student_courses=[row[0] for row in rows]
+
+            for course in student_courses:
+                if course in exam_day_courses:
+                    student_set.append(course)
+
+            day_set.append(student_set)
+
+        detailed_set.append(day_set)
+
+    connection.close()
+    print(detailed_set)
+    return detailed_set
+
+def analysis_excel_writer(detailed_set):
+    current_datetime = datetime.datetime.now()
+
+    # Custom format
+    custom_format = "%d-%m-%Y %H-%M_%S"  # ensuring unique name
+
+    # Format current date and time
+    formatted_datetime = current_datetime.strftime(custom_format)
+    print(formatted_datetime)
+
+    # Create a workbook and add a worksheet.
+    workbook = xlsxwriter.Workbook(f"{formatted_datetime}.xlsx")
+    worksheet = workbook.add_worksheet()
+
+
+    row=0
+
+    for index, data in enumerate(detailed_set):
+        day=index+1
+        worksheet.write(row, 0, f" Day {day}")
+        row += 1
+        col=1
+        for student_set in data:
+            for item in student_set:
+                worksheet.write(row, col, item)
+                col += 1
+            row+=1
+            col=1
+        row += 2
+
+    workbook.close()
+
+
+
+
+
+
+
 if __name__ == "__main__":
     #clear_exam_scheduling_data(db_filepath)
     #content=initialize_scheduling(db_filepath=db_filepath)
@@ -373,4 +469,6 @@ if __name__ == "__main__":
     #swap_slot_content(db_filepath,11,53)
     #update_analysis(db_filepath)
     #balancer(db_filepath)
-    day_swap(db_filepath=db_filepath,dayA=1,dayB=4)
+    #day_swap(db_filepath=db_filepath,dayA=1,dayB=4)
+    detailed_set=detailed_analysis(db_filepath=db_filepath)
+    analysis_excel_writer(detailed_set)
