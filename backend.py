@@ -467,7 +467,54 @@ def analysis_excel_writer(detailed_set):
     workbook.close()
 
 
+def exam_schedule_excel_writer(db_filepath):
+    if not os.path.exists("Schedules"):
+        os.mkdir("Schedules")
 
+    current_datetime = datetime.datetime.now()
+
+    # Custom format
+    custom_format = "%d-%m-%Y %H-%M_%S"  # ensuring unique name
+
+    # Format current date and time
+    formatted_datetime = current_datetime.strftime(custom_format)
+
+
+    # Create a workbook and add a worksheet.
+    workbook = xlsxwriter.Workbook(f"Schedules/{formatted_datetime}.xlsx")
+    worksheet = workbook.add_worksheet()
+
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT * FROM exam_schedule ")
+    rows = cursor.fetchall()
+    slots=[row[0] for row in rows]
+    total_students=[row[3] for row in rows]
+    courses=[json.loads(row[1]) for row in rows]
+
+    row=0
+    col=0
+
+    worksheet.write(row, col, f"Slot")
+    worksheet.write(row, col+1, f"Total Students")
+    worksheet.write(row, col+2, f"Courses")
+
+    row += 2
+
+    for i in range(len(slots)):
+        col=0
+        worksheet.write(row, col, f"{slots[i]}")
+        col += 1
+        worksheet.write(row, col, f"{total_students[i]}")
+        col += 1
+        for course in courses[i]:
+            worksheet.write(row, col, f"{course}")
+            col += 1
+
+        row += 1
+
+
+    workbook.close()
 
 
 
@@ -482,7 +529,8 @@ if __name__ == "__main__":
     #update_analysis(db_filepath)
     #swap_slot_content(db_filepath,23,12)
     #update_analysis(db_filepath)
-    balancer(db_filepath)
+    #balancer(db_filepath)
     #day_swap(db_filepath=db_filepath,dayA=1,dayB=4)
     #detailed_set=detailed_analysis(db_filepath=db_filepath)
     #analysis_excel_writer(detailed_set)
+    exam_schedule_excel_writer(db_filepath)

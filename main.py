@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdi
 
 import sys
 from backend import schedule_course,deschedule_course,update_analysis,current_analysis,possible_slots,detailed_analysis,analysis_excel_writer,\
-    swap_slot_content,day_swap,balancer,balancer_swapper
+    swap_slot_content,day_swap,balancer,balancer_swapper,exam_schedule_excel_writer
 
 from database import clear_exam_schedule_table,clear_course_slot_db,initialize_exam_schedule_table\
     ,populate_course_table,csv_to_db ,clear_student_enrollment_data
@@ -143,6 +143,10 @@ class MainWindow(QMainWindow):
         optimization_button3 = QPushButton("Optimize Random")
         optimization_button3.clicked.connect(self.optimize3)
 
+        schedule_excel_button=QPushButton("Export Schedule to Excel")
+        schedule_excel_button.clicked.connect(self.schedule_to_excel)
+
+
 
         """"""""""2 rows 9 column idea , row column rowspan colspan"""""""""
 
@@ -160,6 +164,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.table3,2,7,1,3)
         layout.addWidget(swap_slot_button,3,7,1,1)
         layout.addWidget(swap_day_button,3,8,1,1)
+        layout.addWidget(schedule_excel_button,3,2,1,1)
         layout.addWidget(optimization_button,3,3,1,1)
         layout.addWidget(optimization_button2, 3, 4, 1, 1)
         layout.addWidget(optimization_button3, 3, 5, 1, 1)
@@ -447,6 +452,12 @@ class MainWindow(QMainWindow):
         confirmation_widget.setText("The detailed analysis (excel file) can be found in Reports folder")
         confirmation_widget.exec()
 
+    def schedule_to_excel(self):
+        exam_schedule_excel_writer(db_filepath=db_filepath)
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The Schedule (excel file) can be found in Schedules folder")
+        confirmation_widget.exec()
 
     def swap_slots(self):
         self.swap_slot_dialog=QDialog()
