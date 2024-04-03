@@ -7,7 +7,8 @@ from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdi
     QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout, QToolBar, QStatusBar, QMessageBox
 
 import sys
-from backend import schedule_course,deschedule_course,update_analysis,current_analysis,possible_slots,detailed_analysis,analysis_excel_writer
+from backend import schedule_course,deschedule_course,update_analysis,current_analysis,possible_slots,detailed_analysis,analysis_excel_writer,\
+    swap_slot_content,day_swap,balancer,balancer_swapper
 
 from database import clear_exam_schedule_table,clear_course_slot_db,initialize_exam_schedule_table\
     ,populate_course_table,csv_to_db ,clear_student_enrollment_data
@@ -125,13 +126,16 @@ class MainWindow(QMainWindow):
         self.table4.verticalHeader().setVisible(False)
 
         swap_slot_button = QPushButton("Swap Slots")
-        swap_slot_button.clicked.connect(self.deschedule)
+        swap_slot_button.clicked.connect(self.swap_slots)
 
         swap_day_button = QPushButton("Swap Days")
-        swap_day_button.clicked.connect(self.deschedule)
+        swap_day_button.clicked.connect(self.swap_days)
 
         detailed_analysis_button = QPushButton("Get Detailed Analysis")
         detailed_analysis_button.clicked.connect(self.detailed_analysis)
+
+        optimization_button=QPushButton("Optimize")
+        optimization_button.clicked.connect(self.optimize)
 
 
         """"""""""2 rows 9 column idea , row column rowspan colspan"""""""""
@@ -148,8 +152,9 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.table2,2,2,1,4)
         layout.addWidget(self.table5, 2, 6, 1, 1)
         layout.addWidget(self.table3,2,7,1,3)
-        layout.addWidget(swap_slot_button,3,7,1,1)
-        layout.addWidget(swap_day_button,3,8,1,1)
+        layout.addWidget(swap_slot_button,3,5,1,1)
+        layout.addWidget(swap_day_button,3,6,1,1)
+        layout.addWidget(optimization_button,3,8,1,1)
         layout.addWidget(detailed_analysis_button,3,9,1,1)
 
 
@@ -400,6 +405,16 @@ class MainWindow(QMainWindow):
 
         self.statusbar.addWidget(shift_button)
 
+    def optimize(self):
+        balancer(db_filepath=db_filepath)
+        self.load_exam_schedule()
+        self.load_analysis()
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText(f"Optimization has been attained for current state")
+        confirmation_widget.exec()
+
+
     def detailed_analysis(self):
         detailed_set=detailed_analysis(db_filepath=db_filepath)
         analysis_excel_writer(detailed_set=detailed_set)
@@ -409,6 +424,109 @@ class MainWindow(QMainWindow):
         confirmation_widget.exec()
 
 
+    def swap_slots(self):
+        self.swap_slot_dialog=QDialog()
+        self.swap_slot_dialog.setWindowTitle("Confirmation")
+        self.swap_slot_dialog.setMinimumSize(550, 400)
+        layout = QVBoxLayout()
+
+
+        label = QLabel("Swap Slots")
+        label.setStyleSheet("font-weight: bold;")
+        label.setFixedHeight(20)
+        layout.addWidget(label)
+
+        self.slot1 = QComboBox()
+        connection = DatabaseConnection().connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT slot FROM exam_schedule")
+        rows = cursor.fetchall()
+        lst_of_tples = rows
+        lst = [item[0] for item in lst_of_tples]
+        self.slot1.addItems(lst)
+        layout.addWidget(self.slot1)
+
+        self.slot2 = QComboBox()
+        self.slot2.addItems(lst)
+        layout.addWidget(self.slot2)
+
+
+        button = QPushButton("Apply")
+        button.clicked.connect(self.apply_slot_swap)
+        layout.addWidget(button)
+
+        button2 = QPushButton("Cancel")
+        button2.clicked.connect(self.swap_slot_dialog.close)
+        layout.addWidget(button2)
+
+        self.swap_slot_dialog.setLayout(layout)
+        self.swap_slot_dialog.exec()
+
+    def apply_slot_swap(self):
+
+        slot1 = self.slot1.itemText(self.slot1.currentIndex())
+        slot2 = self.slot2.itemText(self.slot2.currentIndex())
+
+        swap_slot_content(db_filepath=db_filepath,slot1=slot1,slot2=slot2)
+        update_analysis(db_filepath=db_filepath)
+        self.load_analysis()
+        self.load_exam_schedule()
+        self.swap_slot_dialog.close()
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText(f"Slot {slot1} has been swapped with {slot2}")
+        confirmation_widget.exec()
+
+    def swap_days(self):
+        self.swap_days_dialog = QDialog()
+        self.swap_days_dialog.setWindowTitle("Confirmation")
+        self.swap_days_dialog.setMinimumSize(550, 400)
+        layout = QVBoxLayout()
+
+        label = QLabel("Swap Days")
+        label.setStyleSheet("font-weight: bold;")
+        label.setFixedHeight(20)
+        layout.addWidget(label)
+
+        self.day1 = QComboBox()
+        connection = DatabaseConnection().connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT days FROM constraints")
+        row= cursor.fetchone()
+        lst=[str(i+1) for i in range(row[0])]
+
+        self.day1.addItems(lst)
+        layout.addWidget(self.day1)
+
+        self.day2 = QComboBox()
+        self.day2.addItems(lst)
+        layout.addWidget(self.day2)
+
+        button = QPushButton("Apply")
+        button.clicked.connect(self.apply_day_swap)
+        layout.addWidget(button)
+
+        button2 = QPushButton("Cancel")
+        button2.clicked.connect(self.swap_days_dialog.close)
+        layout.addWidget(button2)
+
+        self.swap_days_dialog.setLayout(layout)
+        self.swap_days_dialog.exec()
+
+    def apply_day_swap(self):
+
+        day1 = self.day1.itemText(self.day1.currentIndex())
+        day2 = self.day2.itemText(self.day2.currentIndex())
+
+        day_swap(db_filepath=db_filepath,dayA=day1,dayB=day2)
+        update_analysis(db_filepath=db_filepath)
+        self.load_analysis()
+        self.load_exam_schedule()
+        self.swap_days_dialog.close()
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText(f"Day {day1} has been swapped with day {day2}")
+        confirmation_widget.exec()
     def NA_shift_0(self):
         try:
             index = window.table5.currentRow()

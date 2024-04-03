@@ -196,6 +196,9 @@ def balancer_swapper(slot1 , slot2 , cursor):
 
 
 def balancer(db_filepath):
+    """ Uses a greedy approach thus not the most optimal solution , solution changes based on the state on which
+        the function was called.
+    """
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
     cursor.execute(f"SELECT slot FROM exam_schedule ")
@@ -204,52 +207,46 @@ def balancer(db_filepath):
 
 
 
-    while True:
-        swap_flag = 0
-
+    for slot1 in exam_slots:
         cursor.execute(f"SELECT abc from analysis")
         rows = cursor.fetchall()
         abc = [len(json.loads(row[0])) for row in rows]
         initial_abc = sum(abc)
 
-        for slot1 in exam_slots:
-            best_swap = None
-            min_abc = initial_abc
+        best_swap = None
+        min_abc = initial_abc
 
-            for slot2 in exam_slots:
-                balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
-                connection.commit()
-                update_analysis(db_filepath=db_filepath)
+        for slot2 in exam_slots:
+            balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
+            connection.commit()
+            update_analysis(db_filepath=db_filepath)
 
-                cursor.execute(f"SELECT abc from analysis")
-                rows=cursor.fetchall()
-                abc=[len(json.loads(row[0])) for row in rows]
-                total_abc=sum(abc)
+            cursor.execute(f"SELECT abc from analysis")
+            rows=cursor.fetchall()
+            abc=[len(json.loads(row[0])) for row in rows]
+            total_abc=sum(abc)
 
-                if total_abc < min_abc:
-                    min_abc=total_abc
-                    best_swap=slot2
-                    balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
-                    connection.commit()
-                    update_analysis(db_filepath=db_filepath)
+            balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
+            connection.commit()
+            update_analysis(db_filepath=db_filepath)
 
-                else: # undo
-                    balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
-                    connection.commit()
-                    update_analysis(db_filepath=db_filepath)
-
-            """applying best swap"""
-            if best_swap:
-                balancer_swapper(slot1=slot1, slot2=best_swap, cursor=cursor)
-                connection.commit()
-                update_analysis(db_filepath=db_filepath)
-                swap_flag=1
+            if total_abc < min_abc:
+                min_abc=total_abc
+                best_swap=slot2
 
 
-        print("Loading...")
-        if swap_flag==0:
-            connection.close()
-            return 1
+
+        #applying best swap
+        if best_swap:
+            balancer_swapper(slot1=slot1, slot2=best_swap, cursor=cursor)
+            connection.commit()
+            update_analysis(db_filepath=db_filepath)
+            print("Loading...")
+
+
+
+    connection.close()
+    return 1
 
 
 def day_swap(db_filepath,dayA,dayB):
@@ -471,9 +468,9 @@ if __name__ == "__main__":
     #value=schedule_course(db_filepath=db_filepath,exam_slot="32",course="CYP502")
     #print(value)
     #update_analysis(db_filepath)
-    #swap_slot_content(db_filepath,11,53)
+    #swap_slot_content(db_filepath,23,12)
     #update_analysis(db_filepath)
-    #balancer(db_filepath)
+    balancer(db_filepath)
     #day_swap(db_filepath=db_filepath,dayA=1,dayB=4)
-    detailed_set=detailed_analysis(db_filepath=db_filepath)
-    analysis_excel_writer(detailed_set)
+    #detailed_set=detailed_analysis(db_filepath=db_filepath)
+    #analysis_excel_writer(detailed_set)
