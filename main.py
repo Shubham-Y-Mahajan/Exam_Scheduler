@@ -134,8 +134,14 @@ class MainWindow(QMainWindow):
         detailed_analysis_button = QPushButton("Get Detailed Analysis")
         detailed_analysis_button.clicked.connect(self.detailed_analysis)
 
-        optimization_button=QPushButton("Optimize")
+        optimization_button=QPushButton("Optimize Linear")
         optimization_button.clicked.connect(self.optimize)
+
+        optimization_button2 = QPushButton("Optimize Reverse")
+        optimization_button2.clicked.connect(self.optimize2)
+
+        optimization_button3 = QPushButton("Optimize Random")
+        optimization_button3.clicked.connect(self.optimize3)
 
 
         """"""""""2 rows 9 column idea , row column rowspan colspan"""""""""
@@ -152,9 +158,11 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.table2,2,2,1,4)
         layout.addWidget(self.table5, 2, 6, 1, 1)
         layout.addWidget(self.table3,2,7,1,3)
-        layout.addWidget(swap_slot_button,3,5,1,1)
-        layout.addWidget(swap_day_button,3,6,1,1)
-        layout.addWidget(optimization_button,3,8,1,1)
+        layout.addWidget(swap_slot_button,3,7,1,1)
+        layout.addWidget(swap_day_button,3,8,1,1)
+        layout.addWidget(optimization_button,3,3,1,1)
+        layout.addWidget(optimization_button2, 3, 4, 1, 1)
+        layout.addWidget(optimization_button3, 3, 5, 1, 1)
         layout.addWidget(detailed_analysis_button,3,9,1,1)
 
 
@@ -406,15 +414,31 @@ class MainWindow(QMainWindow):
         self.statusbar.addWidget(shift_button)
 
     def optimize(self):
-        balancer(db_filepath=db_filepath)
+        balancer(db_filepath=db_filepath,type=1)
         self.load_exam_schedule()
         self.load_analysis()
         confirmation_widget = QMessageBox()
         confirmation_widget.setWindowTitle("Success")
-        confirmation_widget.setText(f"Optimization has been attained for current state")
+        confirmation_widget.setText(f"Optimization (Linear) has been attained for current state")
         confirmation_widget.exec()
 
+    def optimize2(self):
+        balancer(db_filepath=db_filepath,type=2)
+        self.load_exam_schedule()
+        self.load_analysis()
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText(f"Optimization (Reverse) has been attained for current state")
+        confirmation_widget.exec()
 
+    def optimize3(self):
+        balancer(db_filepath=db_filepath,type=3)
+        self.load_exam_schedule()
+        self.load_analysis()
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText(f"Optimization (Randomised) has been attained for current state")
+        confirmation_widget.exec()
     def detailed_analysis(self):
         detailed_set=detailed_analysis(db_filepath=db_filepath)
         analysis_excel_writer(detailed_set=detailed_set)

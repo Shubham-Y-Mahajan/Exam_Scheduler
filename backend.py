@@ -1,7 +1,7 @@
 import os.path
 
 from initialization_backend import first_draft, clear_exam_scheduling_data ,slot_regex, initialize_scheduling
-import re
+import random
 import json
 import sqlite3
 import xlsxwriter
@@ -195,58 +195,70 @@ def balancer_swapper(slot1 , slot2 , cursor):
                    row1)
 
 
-def balancer(db_filepath):
+def balancer(db_filepath,type):
     """ Uses a greedy approach thus not the most optimal solution , solution changes based on the state on which
         the function was called.
+        As a solution to the above problem we are randomising it as much as possible
     """
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
     cursor.execute(f"SELECT slot FROM exam_schedule ")
     rows = cursor.fetchall()
     exam_slots=[row[0] for row in rows]
+    exam_slots2=[row[0] for row in rows]
+    if type == 1:
+        pass
+    elif type == 2:
+        exam_slots.reverse()
+        exam_slots2.reverse()
+    elif type == 3:
+        random.shuffle(exam_slots)
+        random.shuffle(exam_slots2)
 
-
-
-    for slot1 in exam_slots:
-        cursor.execute(f"SELECT abc from analysis")
-        rows = cursor.fetchall()
-        abc = [len(json.loads(row[0])) for row in rows]
-        initial_abc = sum(abc)
-
-        best_swap = None
-        min_abc = initial_abc
-
-        for slot2 in exam_slots:
-            balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
-            connection.commit()
-            update_analysis(db_filepath=db_filepath)
-
+    while True:
+        print("wait")
+        swap_flag=0
+        for slot1 in exam_slots:
             cursor.execute(f"SELECT abc from analysis")
-            rows=cursor.fetchall()
-            abc=[len(json.loads(row[0])) for row in rows]
-            total_abc=sum(abc)
+            rows = cursor.fetchall()
+            abc = [len(json.loads(row[0])) for row in rows]
+            initial_abc = sum(abc)
 
-            balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
-            connection.commit()
-            update_analysis(db_filepath=db_filepath)
+            best_swap = None
+            min_abc = initial_abc
 
-            if total_abc < min_abc:
-                min_abc=total_abc
-                best_swap=slot2
+            for slot2 in exam_slots2:
+                balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
+                connection.commit()
+                update_analysis(db_filepath=db_filepath)
+
+                cursor.execute(f"SELECT abc from analysis")
+                rows=cursor.fetchall()
+                abc=[len(json.loads(row[0])) for row in rows]
+                total_abc=sum(abc)
+
+                balancer_swapper(slot1=slot1, slot2=slot2, cursor=cursor)
+                connection.commit()
+                update_analysis(db_filepath=db_filepath)
+
+                if total_abc < min_abc:
+                    min_abc=total_abc
+                    best_swap=slot2
 
 
 
-        #applying best swap
-        if best_swap:
-            balancer_swapper(slot1=slot1, slot2=best_swap, cursor=cursor)
-            connection.commit()
-            update_analysis(db_filepath=db_filepath)
-            print("Loading...")
+            #applying best swap
+            if best_swap:
+                swap_flag=1
+                balancer_swapper(slot1=slot1, slot2=best_swap, cursor=cursor)
+                connection.commit()
+                update_analysis(db_filepath=db_filepath)
+                print("Loading...")
 
 
-
-    connection.close()
-    return 1
+        if swap_flag==0:
+            connection.close()
+            return 1
 
 
 def day_swap(db_filepath,dayA,dayB):
