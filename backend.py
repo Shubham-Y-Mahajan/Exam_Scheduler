@@ -1,3 +1,5 @@
+import os.path
+
 from initialization_backend import first_draft, clear_exam_scheduling_data ,slot_regex, initialize_scheduling
 import re
 import json
@@ -244,7 +246,7 @@ def balancer(db_filepath):
                 swap_flag=1
 
 
-        print("wait")
+        print("Loading...")
         if swap_flag==0:
             connection.close()
             return 1
@@ -417,10 +419,13 @@ def detailed_analysis(db_filepath):
         detailed_set.append(day_set)
 
     connection.close()
-    print(detailed_set)
+
     return detailed_set
 
 def analysis_excel_writer(detailed_set):
+    if not os.path.exists("Reports"):
+        os.mkdir("Reports")
+
     current_datetime = datetime.datetime.now()
 
     # Custom format
@@ -428,10 +433,10 @@ def analysis_excel_writer(detailed_set):
 
     # Format current date and time
     formatted_datetime = current_datetime.strftime(custom_format)
-    print(formatted_datetime)
+
 
     # Create a workbook and add a worksheet.
-    workbook = xlsxwriter.Workbook(f"{formatted_datetime}.xlsx")
+    workbook = xlsxwriter.Workbook(f"Reports/{formatted_datetime}.xlsx")
     worksheet = workbook.add_worksheet()
 
 

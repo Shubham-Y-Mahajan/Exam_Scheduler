@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdi
     QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout, QToolBar, QStatusBar, QMessageBox
 
 import sys
-from backend import schedule_course,deschedule_course,update_analysis,current_analysis,possible_slots
+from backend import schedule_course,deschedule_course,update_analysis,current_analysis,possible_slots,detailed_analysis,analysis_excel_writer
 
 from database import clear_exam_schedule_table,clear_course_slot_db,initialize_exam_schedule_table\
     ,populate_course_table,csv_to_db ,clear_student_enrollment_data
@@ -130,6 +130,9 @@ class MainWindow(QMainWindow):
         swap_day_button = QPushButton("Swap Days")
         swap_day_button.clicked.connect(self.deschedule)
 
+        detailed_analysis_button = QPushButton("Get Detailed Analysis")
+        detailed_analysis_button.clicked.connect(self.detailed_analysis)
+
 
         """"""""""2 rows 9 column idea , row column rowspan colspan"""""""""
 
@@ -147,8 +150,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.table3,2,7,1,3)
         layout.addWidget(swap_slot_button,3,7,1,1)
         layout.addWidget(swap_day_button,3,8,1,1)
-        #hh
-
+        layout.addWidget(detailed_analysis_button,3,9,1,1)
 
 
         # create a toolbar and add toolbar elements
@@ -293,8 +295,6 @@ class MainWindow(QMainWindow):
                 # setItem is used to populate the empty row with data
         connection.close()
 
-
-
     def cell_clicked_table1(self):
         Deschedule_button = QPushButton("Deschedule Course")
         Deschedule_button.clicked.connect(self.deschedule)
@@ -399,6 +399,15 @@ class MainWindow(QMainWindow):
                 self.statusbar.removeWidget(child)
 
         self.statusbar.addWidget(shift_button)
+
+    def detailed_analysis(self):
+        detailed_set=detailed_analysis(db_filepath=db_filepath)
+        analysis_excel_writer(detailed_set=detailed_set)
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The detailed analysis (excel file) can be found in Reports folder")
+        confirmation_widget.exec()
+
 
     def NA_shift_0(self):
         try:
