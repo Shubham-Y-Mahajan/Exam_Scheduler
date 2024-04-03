@@ -509,9 +509,9 @@ def exam_schedule_excel_writer(db_filepath):
         col += 1
         for course in courses[i]:
             worksheet.write(row, col, f"{course}")
-            col += 1
+            row += 1 # col +=1 if you want courses to be printed in horizontal
 
-        row += 1
+        row += 2
 
 
     workbook.close()
