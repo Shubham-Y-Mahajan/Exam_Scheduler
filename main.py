@@ -7,8 +7,8 @@ from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdi
     QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout, QToolBar, QStatusBar, QMessageBox
 
 import sys
-from backend import schedule_course,deschedule_course,update_analysis,current_analysis,possible_slots,detailed_analysis,analysis_excel_writer,\
-    swap_slot_content,day_swap,balancer,balancer_swapper,exam_schedule_excel_writer
+from backend import schedule_course,deschedule_course,update_analysis,current_analysis,possible_slots,analysis_excel_writer,\
+    swap_slot_content,day_swap,balancer,balancer_swapper,exam_schedule_excel_writer,detailed_analysis_abc,detailed_analysis_all
 
 from database import clear_exam_schedule_table,clear_course_slot_db,initialize_exam_schedule_table\
     ,populate_course_table,csv_to_db ,clear_student_enrollment_data
@@ -445,8 +445,9 @@ class MainWindow(QMainWindow):
         confirmation_widget.setText(f"Optimization (Randomised) has been attained for current state")
         confirmation_widget.exec()
     def detailed_analysis(self):
-        detailed_set=detailed_analysis(db_filepath=db_filepath)
-        analysis_excel_writer(detailed_set=detailed_set)
+        detailed_abc=detailed_analysis_abc(db_filepath=db_filepath)
+        detailed_set=detailed_analysis_all(db_filepath=db_filepath)
+        analysis_excel_writer(detailed_abc=detailed_abc,detailed_cummalative=detailed_set)
         confirmation_widget = QMessageBox()
         confirmation_widget.setWindowTitle("Success")
         confirmation_widget.setText("The detailed analysis (excel file) can be found in Reports folder")

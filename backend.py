@@ -376,7 +376,8 @@ def current_analysis(db_filepath):
 
 
 
-def detailed_analysis(db_filepath):
+def detailed_analysis_abc(db_filepath):
+    """ Exam report vala code le , 3 list le har slot ka ek list then voh index wise pront"""
     connection = sqlite3.connect(db_filepath)
     cursor = connection.cursor()
     cursor.execute(f"SELECT day,abc FROM analysis ")
@@ -431,7 +432,8 @@ def detailed_analysis(db_filepath):
 
     return detailed_set
 
-def analysis_excel_writer(detailed_set):
+
+def analysis_excel_writer(detailed_abc,detailed_cummalative):
     if not os.path.exists("Reports"):
         os.mkdir("Reports")
 
@@ -448,10 +450,9 @@ def analysis_excel_writer(detailed_set):
     workbook = xlsxwriter.Workbook(f"Reports/{formatted_datetime}.xlsx")
     worksheet = workbook.add_worksheet()
 
-
     row=0
 
-    for index, data in enumerate(detailed_set):
+    for index, data in enumerate(detailed_abc):
         day=index+1
         worksheet.write(row, 0, f" Day {day}")
         row += 1
@@ -464,7 +465,85 @@ def analysis_excel_writer(detailed_set):
             col=1
         row += 2
 
+    worksheet = workbook.add_worksheet()
+    row=0
+    col=0
+    worksheet.write(row,col,"ID")
+    worksheet.write(row,col+1,"a")
+    worksheet.write(row,col+2,"b")
+    worksheet.write(row,col+3,"c")
+    worksheet.write(row,col+4,"Day")
+
+    row += 2
+
+    for index, data in enumerate(detailed_cummalative):
+        day=index+1
+        row += 1
+        col=0
+        for student_set in data:
+            for item in student_set:
+                worksheet.write(row, col, item)
+                
+                col += 1
+            worksheet.write(row, col, day)
+            row+=1
+            col=0
+        row += 2
+
     workbook.close()
+
+def detailed_analysis_all(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT day FROM analysis ")
+    rows = cursor.fetchall()
+    days=[row[0] for row in rows]
+
+    detailed_set=[]
+    for day in days:
+        day_set=[]
+        cursor.execute(f"SELECT courses,students FROM exam_schedule WHERE slot = '{day}1' ")
+        rows = cursor.fetchall()
+        a_courses=json.loads([row[0] for row in rows][0])
+        a_students=json.loads([row[1] for row in rows][0])
+        cursor.execute(f"SELECT courses,students FROM exam_schedule WHERE slot = '{day}2' ")
+        rows = cursor.fetchall()
+        b_courses = json.loads([row[0] for row in rows][0])
+        b_students = json.loads([row[1] for row in rows][0])
+        cursor.execute(f"SELECT courses,students FROM exam_schedule WHERE slot = '{day}3' ")
+        rows = cursor.fetchall()
+        c_courses = json.loads([row[0] for row in rows][0])
+        c_students = json.loads([row[1] for row in rows][0])
+
+        all_students=a_students+b_students+c_students
+        day_students=list(set(all_students))
+        for student in day_students:
+            student_set=["","","",""]
+            student_set[0]=student
+            cursor.execute(f"SELECT course_code FROM student_enrollment_data WHERE id='{student}'")
+            rows = cursor.fetchall()
+            student_courses = [row[0] for row in rows]
+
+            for course in student_courses:
+                if course in a_courses:
+                    student_set[1]=course
+                elif course in b_courses:
+                    student_set[2]=course
+                elif course in c_courses:
+                    student_set[3]=course
+
+
+            count=0
+            for item in student_set:
+                if item=="":
+                    count += 1
+
+            if count < 2:
+                day_set.append(student_set)
+        detailed_set.append(day_set)
+
+    return detailed_set
+
 
 
 def exam_schedule_excel_writer(db_filepath):
@@ -531,6 +610,7 @@ if __name__ == "__main__":
     #update_analysis(db_filepath)
     #balancer(db_filepath)
     #day_swap(db_filepath=db_filepath,dayA=1,dayB=4)
-    #detailed_set=detailed_analysis(db_filepath=db_filepath)
-    #analysis_excel_writer(detailed_set)
-    exam_schedule_excel_writer(db_filepath)
+    detailed_abc=detailed_analysis_abc(db_filepath=db_filepath)
+    detailed_2 = detailed_analysis_all(db_filepath=db_filepath)
+    analysis_excel_writer(detailed_abc=detailed_abc,detailed_cummalative=detailed_2)
+    #exam_schedule_excel_writer(db_filepath)
