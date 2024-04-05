@@ -1,5 +1,4 @@
-import os.path
-
+from collections import Counter
 from initialization_backend import first_draft, clear_exam_scheduling_data ,slot_regex, initialize_scheduling
 import random
 import json
@@ -434,9 +433,6 @@ def detailed_analysis_abc(db_filepath):
 
 
 def analysis_excel_writer(detailed_abc,detailed_cummalative):
-    if not os.path.exists("Reports"):
-        os.mkdir("Reports")
-
     current_datetime = datetime.datetime.now()
 
     # Custom format
@@ -491,6 +487,7 @@ def analysis_excel_writer(detailed_abc,detailed_cummalative):
         row += 2
 
     workbook.close()
+    return 1
 
 def detailed_analysis_all(db_filepath):
     connection = sqlite3.connect(db_filepath)
@@ -547,9 +544,6 @@ def detailed_analysis_all(db_filepath):
 
 
 def exam_schedule_excel_writer(db_filepath):
-    if not os.path.exists("Schedules"):
-        os.mkdir("Schedules")
-
     current_datetime = datetime.datetime.now()
 
     # Custom format
@@ -594,6 +588,82 @@ def exam_schedule_excel_writer(db_filepath):
 
 
     workbook.close()
+    return 1
+
+
+def faculty_schedule_report(db_filepath):
+    connection = sqlite3.connect(db_filepath)
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT slot,courses FROM exam_schedule ")
+
+    rows = cursor.fetchall()
+    slots=[json.loads(row[0]) for row in rows]
+    courses=[json.loads(row[1]) for row in rows]
+
+
+    detailed_set=[]
+    for i in range(len(slots)):
+        instructor_course_list=[]
+        instructors=[]
+        slot_number=slots[i]
+        for course in courses[i]:
+            cursor.execute(f"SELECT instructor FROM course_data WHERE course_code = '{course}' ")
+
+            row = cursor.fetchone()
+            instructors.append(row[0])
+            instructor_course_list.append([row[0],course])
+        #print(courses[i])
+        #print(instructors)
+        item_counts = Counter(instructors)
+
+
+
+        for faculty, count in item_counts.items():
+            if count > 1:
+                instructor_set=[]
+                instructor_set.append(slot_number)
+                instructor_set.append(faculty)
+                instructor_set.append(count)
+                course_list=[]
+                for index,instructor in enumerate(instructors):
+                    if faculty == instructor:
+                        course_list.append(courses[i][index])
+                instructor_set.append(course_list)
+                detailed_set.append(instructor_set)
+
+    """ EXCEL Writing  """
+    current_datetime = datetime.datetime.now()
+    # Custom format
+    custom_format = "%d-%m-%Y %H-%M_%S"  # ensuring unique name
+    # Format current date and time
+    formatted_datetime = current_datetime.strftime(custom_format)
+    # Create a workbook and add a worksheet.
+    workbook = xlsxwriter.Workbook(f"Instructor_Reports/{formatted_datetime}.xlsx")
+    worksheet = workbook.add_worksheet()
+
+    row = 0
+    col=0
+    worksheet.write(row,col,"Slot")
+    worksheet.write(row, col+1, "Instructor")
+
+
+    row += 2
+    for line in detailed_set:
+        col=0
+        worksheet.write(row, col, line[0])
+        col += 1
+        worksheet.write(row, col, line[1])
+        col += 1
+
+        for course in line[3]:
+            worksheet.write(row, col, course)
+            col += 1
+
+        row += 1
+
+    workbook.close()
+    return 1
+
 
 
 
@@ -610,7 +680,9 @@ if __name__ == "__main__":
     #update_analysis(db_filepath)
     #balancer(db_filepath)
     #day_swap(db_filepath=db_filepath,dayA=1,dayB=4)
-    detailed_abc=detailed_analysis_abc(db_filepath=db_filepath)
-    detailed_2 = detailed_analysis_all(db_filepath=db_filepath)
-    analysis_excel_writer(detailed_abc=detailed_abc,detailed_cummalative=detailed_2)
+    #detailed_abc=detailed_analysis_abc(db_filepath=db_filepath)
+    #detailed_2 = detailed_analysis_all(db_filepath=db_filepath)
+    #analysis_excel_writer(detailed_abc=detailed_abc,detailed_cummalative=detailed_2)
     #exam_schedule_excel_writer(db_filepath)
+    faculty_schedule_report(db_filepath=db_filepath)
+

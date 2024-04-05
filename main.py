@@ -445,20 +445,32 @@ class MainWindow(QMainWindow):
         confirmation_widget.setText(f"Optimization (Randomised) has been attained for current state")
         confirmation_widget.exec()
     def detailed_analysis(self):
-        detailed_abc=detailed_analysis_abc(db_filepath=db_filepath)
-        detailed_set=detailed_analysis_all(db_filepath=db_filepath)
-        analysis_excel_writer(detailed_abc=detailed_abc,detailed_cummalative=detailed_set)
-        confirmation_widget = QMessageBox()
-        confirmation_widget.setWindowTitle("Success")
-        confirmation_widget.setText("The detailed analysis (excel file) can be found in Reports folder")
-        confirmation_widget.exec()
+        if not os.path.exists("Reports"):
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Error:Folder Not Present")
+            confirmation_widget.setText("Kindly create a folder named 'Reports' in the application directory")
+            confirmation_widget.exec()
+        else:
+            detailed_abc = detailed_analysis_abc(db_filepath=db_filepath)
+            detailed_set = detailed_analysis_all(db_filepath=db_filepath)
+            analysis_excel_writer(detailed_abc=detailed_abc, detailed_cummalative=detailed_set)
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Success")
+            confirmation_widget.setText("The detailed analysis (excel file) can be found in Reports folder")
+            confirmation_widget.exec()
 
     def schedule_to_excel(self):
-        exam_schedule_excel_writer(db_filepath=db_filepath)
-        confirmation_widget = QMessageBox()
-        confirmation_widget.setWindowTitle("Success")
-        confirmation_widget.setText("The Schedule (excel file) can be found in Schedules folder")
-        confirmation_widget.exec()
+        if not os.path.exists("Schedules"):
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Error:Folder Not Present")
+            confirmation_widget.setText("Kindly create a folder named 'Schedules' in the application directory")
+            confirmation_widget.exec()
+        else:
+            exam_schedule_excel_writer(db_filepath=db_filepath)
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Success")
+            confirmation_widget.setText("The Schedule (excel file) can be found in Schedules folder")
+            confirmation_widget.exec()
 
     def swap_slots(self):
         self.swap_slot_dialog=QDialog()
