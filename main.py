@@ -8,7 +8,8 @@ from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdi
 
 import sys
 from backend import schedule_course,deschedule_course,update_analysis,current_analysis,possible_slots,analysis_excel_writer,\
-    swap_slot_content,day_swap,balancer,balancer_swapper,exam_schedule_excel_writer,detailed_analysis_abc,detailed_analysis_all
+    swap_slot_content,day_swap,balancer,balancer_swapper,exam_schedule_excel_writer,detailed_analysis_abc,detailed_analysis_all,faculty_schedule_report
+
 
 from database import clear_exam_schedule_table,clear_course_slot_db,initialize_exam_schedule_table\
     ,populate_course_table,csv_to_db ,clear_student_enrollment_data
@@ -146,6 +147,9 @@ class MainWindow(QMainWindow):
         schedule_excel_button=QPushButton("Export Schedule to Excel")
         schedule_excel_button.clicked.connect(self.schedule_to_excel)
 
+        instructor_report_button = QPushButton("Faculty Check")
+        instructor_report_button.clicked.connect(self.faculty_check)
+
 
 
         """"""""""2 rows 9 column idea , row column rowspan colspan"""""""""
@@ -162,13 +166,17 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.table2,2,2,1,4)
         layout.addWidget(self.table5, 2, 6, 1, 1)
         layout.addWidget(self.table3,2,7,1,3)
-        layout.addWidget(swap_slot_button,3,7,1,1)
-        layout.addWidget(swap_day_button,3,8,1,1)
-        layout.addWidget(schedule_excel_button,3,2,1,1)
-        layout.addWidget(optimization_button,3,3,1,1)
-        layout.addWidget(optimization_button2, 3, 4, 1, 1)
-        layout.addWidget(optimization_button3, 3, 5, 1, 1)
-        layout.addWidget(detailed_analysis_button,3,9,1,1)
+
+        layout.addWidget(swap_slot_button, 3, 2, 1, 1)
+        layout.addWidget(swap_day_button, 3, 3, 1, 1)
+        layout.addWidget(optimization_button, 3, 4, 1, 1)
+        layout.addWidget(optimization_button2, 3, 5, 1, 1)
+        layout.addWidget(optimization_button3, 3, 6, 1, 1)
+
+
+        layout.addWidget(instructor_report_button, 3, 7, 1, 1)
+        layout.addWidget(detailed_analysis_button,3,8,1,1)
+        layout.addWidget(schedule_excel_button, 3, 9, 1, 1)
 
 
         # create a toolbar and add toolbar elements
@@ -445,33 +453,35 @@ class MainWindow(QMainWindow):
         confirmation_widget.setText(f"Optimization (Randomised) has been attained for current state")
         confirmation_widget.exec()
     def detailed_analysis(self):
-        if not os.path.exists("Reports"):
-            confirmation_widget = QMessageBox()
-            confirmation_widget.setWindowTitle("Error:Folder Not Present")
-            confirmation_widget.setText("Kindly create a folder named 'Reports' in the application directory")
-            confirmation_widget.exec()
-        else:
-            detailed_abc = detailed_analysis_abc(db_filepath=db_filepath)
-            detailed_set = detailed_analysis_all(db_filepath=db_filepath)
-            analysis_excel_writer(detailed_abc=detailed_abc, detailed_cummalative=detailed_set)
-            confirmation_widget = QMessageBox()
-            confirmation_widget.setWindowTitle("Success")
-            confirmation_widget.setText("The detailed analysis (excel file) can be found in Reports folder")
-            confirmation_widget.exec()
+        if not os.path.exists("Analysis_Reports"):
+            os.mkdir("Analysis_Reports")
+
+        detailed_abc = detailed_analysis_abc(db_filepath=db_filepath)
+        detailed_set = detailed_analysis_all(db_filepath=db_filepath)
+        analysis_excel_writer(detailed_abc=detailed_abc, detailed_cummalative=detailed_set)
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The detailed analysis (excel file) can be found in 'Analysis_Reports' folder")
+        confirmation_widget.exec()
 
     def schedule_to_excel(self):
         if not os.path.exists("Schedules"):
-            confirmation_widget = QMessageBox()
-            confirmation_widget.setWindowTitle("Error:Folder Not Present")
-            confirmation_widget.setText("Kindly create a folder named 'Schedules' in the application directory")
-            confirmation_widget.exec()
-        else:
-            exam_schedule_excel_writer(db_filepath=db_filepath)
-            confirmation_widget = QMessageBox()
-            confirmation_widget.setWindowTitle("Success")
-            confirmation_widget.setText("The Schedule (excel file) can be found in Schedules folder")
-            confirmation_widget.exec()
+            os.mkdir("Schedules")
 
+        exam_schedule_excel_writer(db_filepath=db_filepath)
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The Schedule (excel file) can be found in 'Schedules' folder")
+        confirmation_widget.exec()
+
+    def faculty_check(self):
+        if not os.path.exists("Faculty_Check_Reports"):
+            os.mkdir("Faculty_Check_Reports")
+        faculty_schedule_report(db_filepath=db_filepath)
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The Faculty Check Report (excel file) can be found in 'Faculty_Check_Reports' folder")
+        confirmation_widget.exec()
     def swap_slots(self):
         self.swap_slot_dialog=QDialog()
         self.swap_slot_dialog.setWindowTitle("Confirmation")

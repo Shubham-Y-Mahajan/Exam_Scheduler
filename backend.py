@@ -443,7 +443,7 @@ def analysis_excel_writer(detailed_abc,detailed_cummalative):
 
 
     # Create a workbook and add a worksheet.
-    workbook = xlsxwriter.Workbook(f"Reports/{formatted_datetime}.xlsx")
+    workbook = xlsxwriter.Workbook(f"Analysis_Reports/{formatted_datetime}.xlsx")
     worksheet = workbook.add_worksheet()
 
     row=0
@@ -638,7 +638,7 @@ def faculty_schedule_report(db_filepath):
     # Format current date and time
     formatted_datetime = current_datetime.strftime(custom_format)
     # Create a workbook and add a worksheet.
-    workbook = xlsxwriter.Workbook(f"Instructor_Reports/{formatted_datetime}.xlsx")
+    workbook = xlsxwriter.Workbook(f"Faculty_Check_Reports/{formatted_datetime}.xlsx")
     worksheet = workbook.add_worksheet()
 
     row = 0
