@@ -765,7 +765,7 @@ class ConstraintsDialog(QDialog):
             button2.clicked.connect(self.close)
             button2.setFixedHeight(25)
 
-            warning_label=QLabel("Warning: If constraints other than max capacity are changed ,\n"
+            warning_label=QLabel("Warning: If constraints are changed ,\n"
                                  "the exam schedule will reset to the first draft and ,\n"
                                  "you will lose your progress.")
             warning_label.setStyleSheet("background-color: lightyellow; border: 2px solid DarkYellow;")
@@ -849,11 +849,9 @@ class DatabaseDialog(QDialog):
         button2 = QPushButton("Input Changed/Setup")
         button3 = QPushButton("Clean Wipe")
         note_label = QLabel("Note:\n\n"
-                            "1)Clean Wipe will clear the entire database\n\n"
-                            "2)After Clean Wipe is used you must use Input Changed/Setup \n"
-                            "  to get data into database.\n\n"
-                            "3)Restore First Draft will recreate the first draft of exam time table using special algorithm\n"
-                            "  this option only works when data is present in database. ")
+                            "1)Use 'Restore first Draft' when you want to reset to the first draft of the schedule \n\n"
+                            "2)Use 'Input Changed/Setup' when you have modified 'input.csv' or when the Data Base has been 'clean wiped'\n\n"
+                            "3)Use 'Clean Wipe' if you want to clear the entire database ")
         note_label.setFixedHeight(200)
         note_label.setStyleSheet("background-color: lightyellow; border: 2px solid DarkYellow;")
 
