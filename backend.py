@@ -1,3 +1,4 @@
+import os.path
 from collections import Counter
 from initialization_backend import first_draft, clear_exam_scheduling_data ,slot_regex, initialize_scheduling
 import random
@@ -433,17 +434,9 @@ def detailed_analysis_abc(db_filepath):
 
 
 def analysis_excel_writer(detailed_abc,detailed_cummalative):
-    current_datetime = datetime.datetime.now()
-
-    # Custom format
-    custom_format = "%d-%m-%Y %H-%M_%S"  # ensuring unique name
-
-    # Format current date and time
-    formatted_datetime = current_datetime.strftime(custom_format)
-
-
-    # Create a workbook and add a worksheet.
-    workbook = xlsxwriter.Workbook(f"Analysis_Reports/{formatted_datetime}.xlsx")
+    if os.path.exists("Analysis Report.xlsx"):
+        os.remove("Analysis Report.xlsx")
+    workbook = xlsxwriter.Workbook(f"Analysis Report.xlsx")
     worksheet = workbook.add_worksheet()
 
     row=0
@@ -544,17 +537,10 @@ def detailed_analysis_all(db_filepath):
 
 
 def exam_schedule_excel_writer(db_filepath):
-    current_datetime = datetime.datetime.now()
-
-    # Custom format
-    custom_format = "%d-%m-%Y %H-%M_%S"  # ensuring unique name
-
-    # Format current date and time
-    formatted_datetime = current_datetime.strftime(custom_format)
-
-
+    if os.path.exists("Exam Schedule.xlsx"):
+        os.remove("Exam Schedule.xlsx")
     # Create a workbook and add a worksheet.
-    workbook = xlsxwriter.Workbook(f"Schedules/{formatted_datetime}.xlsx")
+    workbook = xlsxwriter.Workbook(f"Exam Schedule.xlsx")
     worksheet = workbook.add_worksheet()
 
     connection = sqlite3.connect(db_filepath)
@@ -632,13 +618,10 @@ def faculty_schedule_report(db_filepath):
                 detailed_set.append(instructor_set)
 
     """ EXCEL Writing  """
-    current_datetime = datetime.datetime.now()
-    # Custom format
-    custom_format = "%d-%m-%Y %H-%M_%S"  # ensuring unique name
-    # Format current date and time
-    formatted_datetime = current_datetime.strftime(custom_format)
+    if os.path.exists("Faculty Check Report.xlsx"):
+        os.remove("Faculty Check Report.xlsx")
     # Create a workbook and add a worksheet.
-    workbook = xlsxwriter.Workbook(f"Faculty_Check_Reports/{formatted_datetime}.xlsx")
+    workbook = xlsxwriter.Workbook(f"Faculty Check Report.xlsx")
     worksheet = workbook.add_worksheet()
 
     row = 0

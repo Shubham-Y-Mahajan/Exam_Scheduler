@@ -453,35 +453,45 @@ class MainWindow(QMainWindow):
         confirmation_widget.setText(f"Optimization (Randomised) has been attained for current state")
         confirmation_widget.exec()
     def detailed_analysis(self):
-        if not os.path.exists("Analysis_Reports"):
-            os.mkdir("Analysis_Reports")
-
-        detailed_abc = detailed_analysis_abc(db_filepath=db_filepath)
-        detailed_set = detailed_analysis_all(db_filepath=db_filepath)
-        analysis_excel_writer(detailed_abc=detailed_abc, detailed_cummalative=detailed_set)
-        confirmation_widget = QMessageBox()
-        confirmation_widget.setWindowTitle("Success")
-        confirmation_widget.setText("The detailed analysis (excel file) can be found in 'Analysis_Reports' folder")
-        confirmation_widget.exec()
+        try:
+            detailed_abc = detailed_analysis_abc(db_filepath=db_filepath)
+            detailed_set = detailed_analysis_all(db_filepath=db_filepath)
+            analysis_excel_writer(detailed_abc=detailed_abc, detailed_cummalative=detailed_set)
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Success")
+            confirmation_widget.setText("Analysis Report.xlsx has been created")
+            confirmation_widget.exec()
+        except PermissionError:
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Error")
+            confirmation_widget.setText("Close Analysis Report.xlsx before execution")
+            confirmation_widget.exec()
 
     def schedule_to_excel(self):
-        if not os.path.exists("Schedules"):
-            os.mkdir("Schedules")
-
-        exam_schedule_excel_writer(db_filepath=db_filepath)
-        confirmation_widget = QMessageBox()
-        confirmation_widget.setWindowTitle("Success")
-        confirmation_widget.setText("The Schedule (excel file) can be found in 'Schedules' folder")
-        confirmation_widget.exec()
+        try:
+            exam_schedule_excel_writer(db_filepath=db_filepath)
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Success")
+            confirmation_widget.setText("Exam Schedule.xlsx has been created")
+            confirmation_widget.exec()
+        except PermissionError:
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Error")
+            confirmation_widget.setText("Close Exam Schedule.xlsx before execution")
+            confirmation_widget.exec()
 
     def faculty_check(self):
-        if not os.path.exists("Faculty_Check_Reports"):
-            os.mkdir("Faculty_Check_Reports")
-        faculty_schedule_report(db_filepath=db_filepath)
-        confirmation_widget = QMessageBox()
-        confirmation_widget.setWindowTitle("Success")
-        confirmation_widget.setText("The Faculty Check Report (excel file) can be found in 'Faculty_Check_Reports' folder")
-        confirmation_widget.exec()
+        try:
+            faculty_schedule_report(db_filepath=db_filepath)
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Success")
+            confirmation_widget.setText("Faculty Check Report.xlsx has been created")
+            confirmation_widget.exec()
+        except PermissionError:
+            confirmation_widget = QMessageBox()
+            confirmation_widget.setWindowTitle("Error")
+            confirmation_widget.setText("Close Faculty Check Report.xlsx before execution")
+            confirmation_widget.exec()
     def swap_slots(self):
         self.swap_slot_dialog=QDialog()
         self.swap_slot_dialog.setWindowTitle("Confirmation")
